@@ -1,0 +1,20 @@
+services:
+  obsidian-hub:
+    build: .
+    container_name: obsidian-hub
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - HA_URL=${HA_URL:-http://homeassistant.local:8123}
+      - HA_TOKEN=${HA_TOKEN}
+      - MA_URL=${MA_URL:-ws://192.168.100.50:8095/ws}
+      - MA_TOKEN=${MA_TOKEN}
+    volumes:
+      - ./.env:/app/.env:ro
+    networks:
+      - obsidian-hub
+
+networks:
+  obsidian-hub:
+    driver: bridge
