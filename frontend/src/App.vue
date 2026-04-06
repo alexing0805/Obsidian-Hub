@@ -536,6 +536,16 @@ const toggleFullscreen = () => {
 onMounted(async () => {
   updateClock()
   clockInterval = setInterval(updateClock, 1000)
+  // Load settings from backend first (persists entity_mapping etc)
+  try {
+    const r = await fetch('/api/settings')
+    if (r.ok) {
+      const data = await r.json()
+      if (data.settings) {
+        currentSettings.value = { ...currentSettings.value, ...data.settings }
+      }
+    }
+  } catch(e) { console.error('Failed to load settings', e) }
   await refreshInitialState()
   connectWS()
 })
