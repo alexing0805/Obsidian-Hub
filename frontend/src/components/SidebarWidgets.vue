@@ -10,7 +10,10 @@
     </div>
 
     <!-- 2. 精简气象卡片 (基础信息) -->
-    <div v-if="widgets.weather" class="glass-panel rounded-[2rem] p-5 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg">
+    <div v-if="widgets.weather" 
+      class="glass-panel rounded-[2rem] p-5 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
+      @click="$emit('open', 'weather')"
+    >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <span class="text-5xl drop-shadow-lg group-hover:scale-105 transition-transform duration-500">{{ weatherEmoji }}</span>

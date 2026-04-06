@@ -116,24 +116,46 @@
           <div v-if="!allClimates.length" class="text-center text-white/30 py-10">未检测到空调设备</div>
         </div>
 
-        <!-- 天气详情 -->
+        <!-- 天气详情 (增强版) -->
         <div v-if="type === 'weather'">
-          <div v-if="weatherEntity" class="space-y-4">
-            <div class="text-center mb-6">
-              <div class="text-8xl mb-3">{{ weatherEmoji }}</div>
-              <div class="text-5xl font-bold">{{ weatherTemperature }}</div>
-              <div class="text-lg text-white/60 mt-1">{{ weatherEntity.state }}</div>
-              <div class="text-sm text-white/40 mt-1">{{ weatherEntity.attributes?.friendly_name }}</div>
+          <div v-if="weatherEntity" class="space-y-8 py-4 animate-fade-in relative z-10">
+            <!-- 1. 当前天气核心 -->
+            <div class="text-center py-6">
+              <div class="text-9xl mb-4 drop-shadow-2xl hover:scale-105 transition-transform duration-700 cursor-default">{{ weatherEmoji }}</div>
+              <div class="text-7xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
+              <div class="text-2xl font-black text-cyan-400 mt-2 uppercase tracking-[0.4em]">{{ weatherText }}</div>
+              <div class="text-xs font-bold text-white/20 mt-1 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
             </div>
-            <div class="grid grid-cols-2 gap-3">
+
+            <!-- 2. 详细指标网格 -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
               <div v-for="attr in weatherAttrs" :key="attr.key"
-                class="glass-effect rounded-xl p-4 text-center">
-                <div class="text-xs text-white/40 mb-1">{{ attr.label }}</div>
-                <div class="text-lg font-bold">{{ attr.value }}</div>
+                class="glass-panel rounded-[1.5rem] p-4 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
+                <div class="text-[10px] font-black text-white/20 uppercase mb-2 tracking-widest">{{ attr.label }}</div>
+                <div class="text-lg font-black text-white/90">{{ attr.value }}</div>
+              </div>
+            </div>
+
+            <!-- 3. 未来预报 (还原侧边栏被精简的内容) -->
+            <div v-if="sidebarForecast.length" class="space-y-4 px-2 pt-4 border-t border-white/5">
+              <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7-Day Forecast</div>
+              <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hidden">
+                <div v-for="(fc, idx) in sidebarForecast" :key="idx" 
+                  class="flex-shrink-0 w-32 glass-panel p-5 rounded-[2rem] flex flex-col items-center border border-white/5 hover:border-cyan-500/20 hover:bg-cyan-500/5 transition-all">
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-3">{{ fc.weekday }}</span>
+                  <span class="text-4xl mb-3 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
+                  <div class="flex flex-col items-center">
+                    <span class="text-base font-black text-white">{{ fc.temp }}°</span>
+                    <span v-if="fc.templow" class="text-[10px] font-bold text-white/20 italic">{{ fc.templow }}°</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div v-else class="text-center text-white/30 py-10">未检测到天气实体</div>
+          <div v-else class="text-center text-white/30 py-20">
+            <div class="text-6xl mb-4">🔍</div>
+            <div class="text-sm font-black uppercase tracking-widest">Searching Weather Entity...</div>
+          </div>
         </div>
 
         <!-- 低电量 -->
@@ -227,29 +249,54 @@ const weatherTemperature = computed(() => {
   const v = weatherEntity.value?.attributes?.temperature
   return v !== undefined && v !== null ? `${Number(v).toFixed(1)}°` : '--'
 })
-const weatherEmoji = computed(() => {
+const weatherText = computed(() => {
   const s = (weatherEntity.value?.state || '').toLowerCase()
+  const map = {
+    'sunny': '晴朗', 'clear-night': '晴朗夜间', 'cloudy': '多云', 'partlycloudy': '阴天',
+    'rainy': '有雨', 'pouring': '大雨', 'snowy': '有雪', 'fog': '有雾', 'mist': '薄雾',
+    'thunderstorm': '雷阵雨', 'windy': '刮风', 'hail': '冰雹'
+  }
+  return map[s] || s.toUpperCase()
+})
+const weatherAttrs = computed(() => {
+  const a = weatherEntity.value?.attributes || {}
+  const attrs = []
+  if (a.humidity !== undefined) attrs.push({ key: 'hum', label: '湿度', value: Math.round(a.humidity) + '%' })
+  if (a.pressure !== undefined) attrs.push({ key: 'press', label: '气压', value: a.pressure + ' hPa' })
+  if (a.wind_speed !== undefined) attrs.push({ key: 'wind', label: '风速', value: a.wind_speed + ' m/s' })
+  if (a.visibility !== undefined) attrs.push({ key: 'vis', label: '能见度', value: (a.visibility / 1000).toFixed(1) + ' km' })
+  if (a.apparent_temperature !== undefined) attrs.push({ key: 'feels', label: '体感温度', value: Math.round(a.apparent_temperature) + '°' })
+  if (a.uv_index !== undefined) attrs.push({ key: 'uv', label: '户外指数', value: a.uv_index })
+  if (a.cloud_coverage !== undefined) attrs.push({ key: 'cloud', label: '云量', value: a.cloud_coverage + '%' })
+  if (a.precipitation !== undefined && a.precipitation > 0) attrs.push({ key: 'precip', label: '降水', value: a.precipitation + ' mm' })
+  return attrs
+})
+
+const getFcEmoji = (cond) => {
+  const s = (cond || '').toLowerCase()
   if (s.includes('rain')) return '🌧️'
   if (s.includes('cloud')) return '☁️'
   if (s.includes('sun') || s.includes('clear')) return '☀️'
   if (s.includes('snow')) return '❄️'
   if (s.includes('fog') || s.includes('mist')) return '🌫️'
-  if (s.includes('thunder')) return '⛈️'
   return '🌤️'
-})
-const weatherAttrs = computed(() => {
-  const a = weatherEntity.value?.attributes || {}
-  const attrs = []
-  if (a.humidity !== undefined) attrs.push({ key: 'humidity', label: '湿度', value: Math.round(a.humidity) + '%' })
-  if (a.pressure !== undefined) attrs.push({ key: 'pressure', label: '气压', value: a.pressure + ' hPa' })
-  if (a.wind_speed !== undefined) attrs.push({ key: 'wind', label: '风速', value: a.wind_speed + ' m/s' })
-  if (a.precipitation !== undefined) attrs.push({ key: 'precip', label: '降水量', value: a.precipitation + ' mm' })
-  if (a.precipitation_probability !== undefined) attrs.push({ key: 'pop', label: '降水概率', value: a.precipitation_probability + '%' })
-  if (a.visibility !== undefined) attrs.push({ key: 'vis', label: '能见度', value: (a.visibility / 1000).toFixed(1) + ' km' })
-  if (a.cloud_coverage !== undefined) attrs.push({ key: 'cloud', label: '云量', value: a.cloud_coverage + '%' })
-  if (a.uv_index !== undefined) attrs.push({ key: 'uv', label: '紫外线指数', value: a.uv_index })
-  if (a.apparent_temperature !== undefined) attrs.push({ key: 'feels', label: '体感温度', value: a.apparent_temperature + '°' })
-  return attrs
+}
+
+const sidebarForecast = computed(() => {
+  const fc = weatherEntity.value?.attributes?.forecast || []
+  return fc.slice(1, 8).map(item => {
+    try {
+      const dt = new Date(item.datetime)
+      return {
+        weekday: dt.toLocaleDateString('zh-CN', { weekday: 'short' }),
+        condition: item.condition,
+        temp: Math.round(item.temperature),
+        templow: item.templow ? Math.round(item.templow) : null
+      }
+    } catch(e) {
+      return { weekday: '?', condition: '', temp: '--' }
+    }
+  })
 })
 
 const hvacModes = [
