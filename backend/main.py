@@ -769,6 +769,7 @@ async def update_settings(new_settings: dict[str, Any]):
         "selected_climate_entities",
         "selected_battery_entities",
         "selected_offline_entities",
+        "floor_plan_image",
     }
     filtered = {k: v for k, v in new_settings.items() if k in allowed}
     current_settings.update(filtered)
@@ -859,6 +860,7 @@ DEFAULT_SETTINGS = {
     "selected_climate_entities": [],
     "selected_battery_entities": [],
     "selected_offline_entities": [],
+    "floor_plan_image": "",
 }
 
 def load_settings() -> dict[str, Any]:

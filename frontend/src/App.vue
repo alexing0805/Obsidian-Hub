@@ -52,11 +52,15 @@
       <!-- 左侧主内容区 -->
       <div class="flex-1 p-4 md:p-6 overflow-hidden">
         <div class="w-full h-full rounded-2xl glass-effect relative overflow-hidden">
-          <ThreeDView
+          <FloorPlanView
             :ha-entities="haEntities"
             :entity-mapping="currentSettings.entity_mapping || []"
+            :bg-image="currentSettings.floor_plan_image || ''"
+            :weather-entity-id="currentSettings.weather_entity_id || ''"
+            :ma-state="maState"
             @entity-toggle="onEntityToggle"
             @mapping-update="onMappingUpdate"
+            @bg-update="onBgUpdate"
             @entity-add="onEntityAdd"
           />
 
@@ -129,7 +133,7 @@ import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
 import SettingsView from './components/SettingsView.vue'
 import SidebarWidgets from './components/SidebarWidgets.vue'
 import DetailOverlay from './components/DetailOverlay.vue'
-import ThreeDView from './components/ThreeDView.vue'
+import FloorPlanView from './components/FloorPlanView.vue'
 
 const mainTabs = [
   { id: 'overview', label: '总览', icon: '🏠' },
@@ -308,7 +312,12 @@ const onEntityToggle = ({ entity_id, type }) => {
 
 const onMappingUpdate = (updated) => {
   currentSettings.value = { ...currentSettings.value, entity_mapping: updated }
-  saveSettingsLocal(updated)
+  saveSettingsLocal({ entity_mapping: updated })
+}
+
+const onBgUpdate = (bgData) => {
+  currentSettings.value = { ...currentSettings.value, floor_plan_image: bgData }
+  saveSettingsLocal({ floor_plan_image: bgData })
 }
 
 const onEntityAdd = (entity) => {
