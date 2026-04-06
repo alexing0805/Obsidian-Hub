@@ -4,7 +4,7 @@ services:
     container_name: obsidian-hub
     restart: unless-stopped
     volumes:
-      - ./settings.json:/app/backend/settings.json
+      - obsidian-hub-data:/app/backend
     networks:
       br0:
         ipv4_address: 192.168.100.51
@@ -18,3 +18,6 @@ services:
 networks:
   br0:
     external: true
+
+volumes:
+  obsidian-hub-data:
