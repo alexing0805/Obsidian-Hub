@@ -3,13 +3,13 @@
     <canvas ref="canvas" class="w-full h-full"></canvas>
 
     <!-- 拖拽中的实体信息 -->
-    <div v-if="draggingEntity"
+    <div v-if="draggingEntity || selectedEntity"
       class="absolute top-3 left-3 glass-effect rounded-xl px-4 py-3 text-xs w-56">
       <div class="text-white/70 mb-2 font-medium">拖拽中: {{ draggingEntity.label || draggingEntity.entity_id }}</div>
       <div class="flex items-center gap-2 mb-1">
         <span class="text-white/40 shrink-0">高度 Z:</span>
         <input type="range" min="0" max="800" step="10"
-          :value="Math.round((draggingEntity.z || 0.5) * 1000)"
+          :value="Math.round(((draggingEntity || selectedEntity)?.z || 0.5) * 1000)"
           class="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
           @input="onHeightChange" />
         <span class="text-cyan-300 w-10 text-right">{{ Math.round((draggingEntity.z || 0.5) * 1000) }}</span>
@@ -73,6 +73,8 @@ const canvas = ref(null)
 const editMode = ref(false)
 const showEntityPicker = ref(false)
 const draggingEntity = ref(null)
+const isDragging = ref(false)
+const selectedEntity = ref(null)
 
 // Three.js refs
 let scene, camera, renderer, controls
@@ -166,6 +168,17 @@ const initThree = () => {
   camera.position.set(0, ROOM_W * 1.2, 0)
   camera.lookAt(0, 0, 0)
   camera.updateProjectionMatrix()
+
+  // Restore camera from localStorage
+  try {
+    const saved = localStorage.getItem('3dview_camera')
+    if (saved) {
+      const { pos, tgt } = JSON.parse(saved)
+      camera.position.set(pos.x, pos.y, pos.z)
+      controls.target.set(tgt.x, tgt.y, tgt.z)
+      controls.update()
+    }
+  } catch(e) {}
 
   // Renderer
   renderer = new THREE.WebGLRenderer({ canvas: canvas.value, antialias: true })
@@ -417,7 +430,7 @@ const createEntityMesh = (entity, mapping) => {
     })
   }
 
-  const entityZ = (mapping.z !== undefined ? mapping.z : 0.5) * 1000
+  const entityZ = (mapping.z !== undefined ? mapping.z : 0.5) * 1000  // z is 0-1 normalized -> mm
   const mesh = new THREE.Mesh(geometry, material)
   mesh.position.set(wx, entityZ + (geometry.parameters?.height ? geometry.parameters.height / 2 : 30), wz)
   mesh.castShadow = true
@@ -524,17 +537,26 @@ const onCanvasClick = (event) => {
     const { entity_id, mapping, type } = mesh.userData
 
     if (editMode.value) {
-      // Start dragging
+      // Select entity (show height info) but don't start dragging yet
+      selectedEntity.value = mapping
       draggingEntity.value = mapping
-      if (controls) controls.enabled = false
+      isDragging.value = false
     } else {
       // Toggle
       emit('entity-toggle', { entity_id, type })
     }
+  } else if (!editMode.value) {
+    selectedEntity.value = null
+    draggingEntity.value = null
   }
 }
 
 const onMouseMove = (event) => {
+  // Start dragging on first mouse move with left button held
+  if (!isDragging.value && event.buttons === 1 && draggingEntity.value && editMode.value) {
+    isDragging.value = true
+    if (controls) controls.enabled = false
+  }
   if (!draggingEntity.value || !renderer || !camera) return
 
   const rect = canvas.value.getBoundingClientRect()
@@ -564,20 +586,23 @@ const onMouseMove = (event) => {
 }
 
 const onHeightChange = (event) => {
-  if (!draggingEntity.value) return
+  const target = draggingEntity.value || selectedEntity.value
+  if (!target) return
   const z = parseInt(event.target.value) / 1000
-  draggingEntity.value = { ...draggingEntity.value, z }
-  const entry = entityMeshes[draggingEntity.value.entity_id]
+  draggingEntity.value = { ...target, z }
+  const entry = entityMeshes[target.entity_id]
   if (entry) {
     entry.mesh.position.y = z
   }
 }
 
 const onMouseUp = () => {
-  if (draggingEntity.value) {
-    draggingEntity.value = null
+  if (isDragging.value) {
+    isDragging.value = false
     if (controls) controls.enabled = editMode.value
   }
+  selectedEntity.value = null
+  draggingEntity.value = null
 }
 
 const savePositions = () => {
@@ -586,7 +611,8 @@ const savePositions = () => {
     if (entry) {
       const pt = entry.mesh.position
       const { x, y } = toNormalized(pt.x, pt.z)
-      return { ...m, x, y }
+      const z = pt.y / 1000  // Y position is Z height in mm
+      return { ...m, x, y, z }
     }
     return m
   })
