@@ -1,20 +1,27 @@
 services:
   obsidian-hub:
-    build: .
+    image: ghcr.io/alexing0805/obsidian-hub:latest
     container_name: obsidian-hub
     restart: unless-stopped
-    ports:
-      - "8000:8000"
-    environment:
-      - HA_URL=${HA_URL:-http://homeassistant.local:8123}
-      - HA_TOKEN=${HA_TOKEN}
-      - MA_URL=${MA_URL:-ws://192.168.100.50:8095/ws}
-      - MA_TOKEN=${MA_TOKEN}
     volumes:
-      - ./.env:/app/.env:ro
+      - ./settings.json:/app/backend/settings.json
+    environment:
+      - HA_URL=http://192.168.100.50:8123
+      - HA_TOKEN=${HA_TOKEN}
+      - HA_REFRESH_INTERVAL=15
+      - MA_URL=ws://192.168.100.50:8095/ws
+      - MA_TOKEN=${MA_TOKEN}
+      - MA_REFRESH_INTERVAL=5
     networks:
-      - obsidian-hub
+      br0:
+        ipv4_address: 192.168.100.51
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
 
 networks:
-  obsidian-hub:
-    driver: bridge
+  br0:
+    external: true
