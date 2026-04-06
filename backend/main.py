@@ -571,7 +571,7 @@ async def refresh_ma_state_once() -> bool:
             "queue_player_map": {},
             "active_queue_id": None,
             "active_player_id": None,
-            "ma_base_url": MA_BASE_URL,
+            "ma_base_url": _get_ma_config()["base_url"],
             "refreshed_at": utc_now_iso(),
         }
     else:

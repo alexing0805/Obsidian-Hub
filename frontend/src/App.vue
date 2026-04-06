@@ -332,15 +332,15 @@ const onEntityAdd = (entity) => {
   onMappingUpdate(updated)
 }
 
-const saveSettingsLocal = async (entityMapping) => {
+const saveSettingsLocal = async (partial) => {
   try {
     await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entity_mapping: entityMapping })
+      body: JSON.stringify({ ...currentSettings.value, ...partial })
     })
   } catch (e) {
-    console.error('Save mapping failed:', e)
+    console.error('Save failed:', e)
   }
 }
 
