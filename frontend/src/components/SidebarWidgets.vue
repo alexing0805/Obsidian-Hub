@@ -60,7 +60,7 @@
   
     <!-- 4. 音乐播放器 (垂直 100% 占满) -->
     <!-- 4. 音乐播放器（固定高度，避免挤压） -->
-    <div v-if="widgets.music" class="shrink-0" style="height: 340px;">
+    <div v-if="widgets.music" class="shrink-0 flex-1 min-h-[400px]">
       <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
     </div>
 
