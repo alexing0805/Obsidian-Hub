@@ -184,9 +184,9 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: list[dict[st
     weather_entities = [
         entity for entity in entities if entity["entity_id"].startswith("weather.")
     ]
-    # 优先使用和风天气
-    he_feng = next((w for w in weather_entities if w["entity_id"] == "weather.he_feng_tian_qi"), None)
-    weather_entity = he_feng or next((w for w in weather_entities if w.get("attributes", {}).get("forecast")), None)
+    # 优先使用 met.no 预报天气（支持 get_forecasts 接口）
+    weather_entity = next((w for w in weather_entities if w["entity_id"] == "weather.forecast_wo_de_jia"), None)
+    weather_entity = weather_entity or next((w for w in weather_entities if w.get("attributes", {}).get("forecast")), None)
     if not weather_entity and weather_entities:
         weather_entity = weather_entities[0]
 
@@ -208,10 +208,7 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: list[dict[st
     humidity_entity = choose_by_device_class(
         entities, "humidity", preferred_min=10, preferred_max=95
     )
-    # 优化：优先选择带有 forecast 属性的天气实体
-    weather_entity = next((w for w in weather_entities if w.get("attributes", {}).get("forecast")), None)
-    if not weather_entity and weather_entities:
-        weather_entity = weather_entities[0]
+
 
     summary = {
         "lights_total": len(lights),
@@ -583,7 +580,7 @@ async def refresh_ha_state_once() -> bool:
     
     # 查找天气实体并抓取预报
     weather_forecast_data = []
-    weather_target = next((e for e in entities if e["entity_id"] == "weather.he_feng_tian_qi"), None)
+    weather_target = next((e for e in entities if e["entity_id"] == "weather.forecast_wo_de_jia"), None)
     if not weather_target:
         weather_target = next((e for e in entities if e["entity_id"].startswith("weather.")), None)
     
