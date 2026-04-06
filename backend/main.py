@@ -763,6 +763,12 @@ async def update_settings(new_settings: dict[str, Any]):
         "temperature_entity", "humidity_entity",
         "light_mapping", "light_positions",
         "show_sidebar", "clock_24h",
+        "sidebar_widgets",
+        "weather_entity_id",
+        "selected_light_entities",
+        "selected_climate_entities",
+        "selected_battery_entities",
+        "selected_offline_entities",
     }
     filtered = {k: v for k, v in new_settings.items() if k in allowed}
     current_settings.update(filtered)

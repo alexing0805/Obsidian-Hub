@@ -94,7 +94,9 @@
       </div>
 
       <!-- 右侧边栏 -->
-      <aside v-if="showSidebar || currentTab === 'settings'" class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex overflow-hidden">
+      <aside v-if="showSidebar || currentTab === 'settings'"
+        class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex"
+        :style="currentTab === 'settings' ? 'max-height: calc(100vh - 48px - 40px); overflow-y: auto;' : ''">
         <template v-if="currentTab === 'settings'">
           <SettingsView
             :ha-entities="haEntities"
