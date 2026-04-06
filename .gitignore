@@ -49,3 +49,7 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml
+
+# Local data
+ha_states.json
+weather_debug.json
