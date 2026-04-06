@@ -841,6 +841,16 @@ DEFAULT_SETTINGS = {
                         [120, 350], [280, 430], [430, 390], [620, 350]],
     "show_sidebar": True,
     "clock_24h": True,
+    "sidebar_widgets": {
+        "weather": True,
+        "stats": True,
+        "lights": True,
+        "climate": True,
+        "battery": True,
+        "offline": True,
+        "music": True,
+    },
+    "weather_entity_id": "",
 }
 
 def load_settings() -> dict[str, Any]:
