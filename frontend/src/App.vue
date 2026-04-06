@@ -52,28 +52,14 @@
       <!-- 左侧主内容区 -->
       <div class="flex-1 p-4 md:p-6 overflow-hidden">
         <div class="w-full h-full rounded-2xl glass-effect relative overflow-hidden">
-          <div class="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950">
-            <svg class="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
-              <rect x="50" y="50" width="700" height="500" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
-              <rect x="60" y="60" width="250" height="180" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
-              <rect x="490" y="60" width="250" height="180" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
-              <rect x="60" y="260" width="680" height="280" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
-              <g>
-                <circle
-                  v-for="(light, i) in floorLights"
-                  :key="light.entity_id"
-                  :cx="lightPositions[i][0]"
-                  :cy="lightPositions[i][1]"
-                  r="11"
-                  :fill="light.state === 'on' ? '#fbbf24' : 'rgba(255,255,255,0.3)'"
-                  class="light-dot"
-                  :style="light.state === 'on' ? 'filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.65));' : ''"
-                  @click="toggleLight(light)"
-                />
-              </g>
-            </svg>
-          </div>
-          <div class="absolute top-4 left-4 flex gap-3">
+          <ThreeDView
+            :ha-entities="haEntities"
+            :entity-mapping="currentSettings.entity_mapping || []"
+            @entity-toggle="onEntityToggle"
+            @mapping-update="onMappingUpdate"
+            @entity-add="onEntityAdd"
+          />
+          <div class="absolute top-4 left-4 flex gap-3 pointer-events-none">
             <div class="glass-effect rounded-xl px-4 py-2 text-xs">
               <span class="text-white/60">温度</span>
               <span class="text-white font-bold ml-2">{{ displayTemperature }}</span>
@@ -81,13 +67,6 @@
             <div class="glass-effect rounded-xl px-4 py-2 text-xs">
               <span class="text-white/60">湿度</span>
               <span class="text-white font-bold ml-2">{{ displayHumidity }}</span>
-            </div>
-          </div>
-          <div class="absolute bottom-4 left-4 right-4">
-            <div class="glass-effect rounded-xl px-4 py-2 text-xs text-white/70 truncate">
-              <span class="text-white/40 mr-2">灯光映射:</span>
-              <span v-if="floorLights.length">{{ floorLights.map((item) => item.attributes?.friendly_name || item.entity_id).join(' / ') }}</span>
-              <span v-else>暂无可控灯光</span>
             </div>
           </div>
         </div>
@@ -159,6 +138,7 @@ import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
 import SettingsView from './components/SettingsView.vue'
 import SidebarWidgets from './components/SidebarWidgets.vue'
 import DetailOverlay from './components/DetailOverlay.vue'
+import ThreeDView from './components/ThreeDView.vue'
 
 const mainTabs = [
   { id: 'overview', label: '总览', icon: '🏠' },
@@ -176,6 +156,7 @@ const haEntities = ref([])
 const currentSettings = ref({
   sidebar_widgets: { weather: true, stats: true, lights: true, climate: true, battery: true, offline: true, music: true },
   weather_entity_id: '',
+  entity_mapping: [],
 })
 const defaultSidebarWidgets = {
   weather: true, stats: true, lights: true, climate: true,
@@ -207,23 +188,6 @@ let ws = null
 let wsReconnectTimer = null
 let wsHeartbeatTimer = null
 let clockInterval = null
-
-const lightPositions = [
-  [140, 130],
-  [240, 170],
-  [560, 130],
-  [660, 170],
-  [120, 350],
-  [280, 430],
-  [430, 390],
-  [620, 350]
-]
-
-const floorLights = computed(() => {
-  return haEntities.value
-    .filter((entity) => entity.entity_id?.startsWith('light.'))
-    .slice(0, lightPositions.length)
-})
 
 const filteredEntities = computed(() => {
   const s = currentSettings.value
@@ -325,6 +289,58 @@ const onClimateAction = async ({ entity, action, value }) => {
     })
   } catch (e) {
     console.error('Climate action failed:', e)
+  }
+}
+
+const onEntityToggle = ({ entity_id, type }) => {
+  if (type === '灯') {
+    const entity = haEntities.value.find(e => e.entity_id === entity_id)
+    if (entity) toggleLight(entity)
+  } else if (type === '空调') {
+    const entity = haEntities.value.find(e => e.entity_id === entity_id)
+    if (entity) {
+      const newMode = entity.state === 'off' ? 'heat' : 'off'
+      onClimateAction({ entity, action: 'mode', value: newMode })
+    }
+  } else if (type === '开关') {
+    const entity = haEntities.value.find(e => e.entity_id === entity_id)
+    if (entity) {
+      const newState = entity.state === 'on' ? 'turn_off' : 'turn_on'
+      fetch('/api/ha/service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: 'switch', service: newState, entity_id })
+      })
+    }
+  }
+}
+
+const onMappingUpdate = (updated) => {
+  currentSettings.value = { ...currentSettings.value, entity_mapping: updated }
+  saveSettingsLocal(updated)
+}
+
+const onEntityAdd = (entity) => {
+  const mapping = {
+    entity_id: entity.entity_id,
+    x: 0.2 + Math.random() * 0.6,
+    y: 0.2 + Math.random() * 0.6,
+    type: entity.entity_id.startsWith('light.') ? '灯' : (entity.entity_id.startsWith('climate.') ? '空调' : '其他'),
+    label: entity.attributes?.friendly_name || entity.entity_id,
+  }
+  const updated = [...(currentSettings.value.entity_mapping || []), mapping]
+  onMappingUpdate(updated)
+}
+
+const saveSettingsLocal = async (entityMapping) => {
+  try {
+    await fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entity_mapping: entityMapping })
+    })
+  } catch (e) {
+    console.error('Save mapping failed:', e)
   }
 }
 

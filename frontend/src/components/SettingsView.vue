@@ -216,29 +216,25 @@
         </div>
       </template>
 
-      <!-- 灯光映射 -->
+      <!-- 实体映射（3D视图） -->
       <template v-if="currentTab === 'lights'">
         <div class="glass-effect rounded-xl p-4">
-          <div class="text-xs text-white/40 mb-3">点击灯光可切换开关。映射保存在服务器端。</div>
-          <div class="space-y-2">
-            <div v-for="(_, i) in 8" :key="i" class="flex items-center gap-2">
-              <span class="text-xs text-white/40 w-5 shrink-0 text-right">#{{ i + 1 }}</span>
-              <select v-model="localSettings.light_mapping[i]" class="settings-input flex-1" @change="markDirty">
-                <option value="">-- 不映射 --</option>
-                <option v-for="l in allLights" :key="l.entity_id" :value="l.entity_id">
-                  {{ l.attributes?.friendly_name || l.entity_id }}
-                </option>
-              </select>
-              <div class="flex items-center gap-1 shrink-0">
-                <input v-model.number="localSettings.light_positions[i][0]" type="number" min="0" max="800"
-                  class="settings-input w-16 text-center" @input="markDirty" />
-                <span class="text-xs text-white/40">,</span>
-                <input v-model.number="localSettings.light_positions[i][1]" type="number" min="0" max="600"
-                  class="settings-input w-16 text-center" @input="markDirty" />
-              </div>
+          <div class="text-sm font-medium mb-2">🗺️ 3D 视图实体映射</div>
+          <div class="text-xs text-white/40 mb-3">拖拽编辑模式下可在视图里自由放置位置，点击切换状态</div>
+          <div class="text-xs text-white/40 mb-2">已映射实体（点击删除）：</div>
+          <div class="space-y-1 mb-3">
+            <div v-for="mapping in localSettings.entity_mapping" :key="mapping.entity_id"
+              class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+              <span>{{ entityTypeIcon(mapping.type) }}</span>
+              <span class="flex-1 text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</span>
+              <span class="text-xs text-white/30">{{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%</span>
+              <button class="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded border border-red-500/20"
+                @click="removeMapping(mapping.entity_id)">删除</button>
+            </div>
+            <div v-if="!localSettings.entity_mapping?.length" class="text-xs text-white/30 text-center py-2">
+              暂无映射实体。在主视图里点击「+ 添加实体到视图」
             </div>
           </div>
-          <div class="mt-3 text-xs text-white/30">位置对应楼层 SVG 视图 (800×600)，格式：X,Y</div>
         </div>
       </template>
 
@@ -340,8 +336,6 @@ const defaultSettings = () => ({
   ma_refresh_interval: 5,
   temperature_entity: '',
   humidity_entity: '',
-  light_mapping: Array(8).fill(''),
-  light_positions: [[140,130],[240,170],[560,130],[660,170],[120,350],[280,430],[430,390],[620,350]],
   show_sidebar: true,
   clock_24h: true,
   sidebar_widgets: {
@@ -353,6 +347,7 @@ const defaultSettings = () => ({
   selected_climate_entities: [],
   selected_battery_entities: [],
   selected_offline_entities: [],
+  entity_mapping: [],
 })
 
 const localSettings = ref(defaultSettings())
@@ -408,6 +403,15 @@ const toggleAllClimates = () => {
   markDirty()
 }
 
+const entityTypeIcon = (type) => {
+  return { '灯': '💡', '空调': '❄️', '传感器': '🌡️', '开关': '🔌', '其他': '📦' }[type] || '📦'
+}
+
+const removeMapping = (entity_id) => {
+  localSettings.value.entity_mapping = (localSettings.value.entity_mapping || []).filter(m => m.entity_id !== entity_id)
+  markDirty()
+}
+
 const saveSettings = async () => {
   saving.value = true
   saveStatus.value = 'idle'
@@ -459,8 +463,9 @@ const loadSettings = async () => {
         ma_refresh_interval: s.ma_refresh_interval || 5,
         temperature_entity: s.temperature_entity || '',
         humidity_entity: s.humidity_entity || '',
-        light_mapping: s.light_mapping || Array(8).fill(''),
-        light_positions: s.light_positions || [[140,130],[240,170],[560,130],[660,170],[120,350],[280,430],[430,390],[620,350]],
+        light_mapping: [],
+        light_positions: [],
+        entity_mapping: s.entity_mapping || [],
         show_sidebar: s.show_sidebar !== undefined ? s.show_sidebar : true,
         clock_24h: s.clock_24h !== undefined ? s.clock_24h : true,
         sidebar_widgets: s.sidebar_widgets || { weather: true, stats: true, lights: true, climate: true, battery: true, offline: true, music: true },

@@ -761,7 +761,7 @@ async def update_settings(new_settings: dict[str, Any]):
         "ma_url", "ma_token",
         "ha_refresh_interval", "ma_refresh_interval",
         "temperature_entity", "humidity_entity",
-        "light_mapping", "light_positions",
+        "entity_mapping",
         "show_sidebar", "clock_24h",
         "sidebar_widgets",
         "weather_entity_id",
@@ -842,9 +842,7 @@ DEFAULT_SETTINGS = {
     "ha_token": "",
     "ma_url": "",
     "ma_token": "",
-    "light_mapping": ["", "", "", "", "", "", "", ""],
-    "light_positions": [[140, 130], [240, 170], [560, 130], [660, 170],
-                        [120, 350], [280, 430], [430, 390], [620, 350]],
+    "entity_mapping": [],  # [{entity_id, x, y, type, label}, ...]
     "show_sidebar": True,
     "clock_24h": True,
     "sidebar_widgets": {
