@@ -122,6 +122,7 @@
       :ha-entities="filteredEntities"
       :ma-state="maState"
       :weather-entity-id="currentSettings.weather_entity_id || ''"
+      :weather-forecast="summary.weather?.forecast || []"
       @close="activeDetail = { type: null, entityId: null }"
       @toggle-light="onEntityToggle"
       @climate-action="onClimateAction"

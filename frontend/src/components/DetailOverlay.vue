@@ -211,6 +211,7 @@ const props = defineProps({
   haEntities: { type: Array, default: () => [] },
   maState: { type: Object, default: () => ({}) },
   weatherEntityId: { type: String, default: '' },
+  weatherForecast: { type: Array, default: () => [] },
 })
 
 const emit = defineEmits(['close', 'toggle-light', 'climate-action', 'cover-action'])
@@ -307,7 +308,7 @@ const getFcEmoji = (cond) => {
 }
 
 const sidebarForecast = computed(() => {
-  const fc = weatherEntity.value?.attributes?.forecast || []
+  const fc = props.weatherForecast || []
   return fc.slice(1, 8).map(item => {
     try {
       const dt = new Date(item.datetime)
