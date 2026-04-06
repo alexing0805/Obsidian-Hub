@@ -56,19 +56,18 @@
   
     <!-- 3. 极速音乐播放器 (占据剩余空间) -->
     <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0">
-      <div class="flex-1 min-h-0 bg-white/5 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col">
+      <div class="flex-1 min-h-0">
         <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
       </div>
     </div>
 
   </div>
 </template>
-
+ 
 <script setup>
 import { computed } from 'vue'
 import MusicAssistantPlayer from './MusicAssistantPlayer.vue'
-import MusicPlayerSelector from './MusicPlayerSelector.vue'
-
+ 
 const props = defineProps({
   haEntities: { type: Array, default: () => [] },
   summary: { type: Object, default: () => ({}) },
@@ -78,9 +77,9 @@ const props = defineProps({
   weatherEntityId: { type: String, default: '' },
   sidebarWidgets: { type: Object, default: () => ({}) },
 })
-
+ 
 defineEmits(['open', 'toggle-light', 'select-player'])
-
+ 
 const widgets = computed(() => ({
   weather: props.sidebarWidgets.weather !== false,
   stats: props.sidebarWidgets.stats !== false,
@@ -90,10 +89,10 @@ const widgets = computed(() => ({
   offline: props.sidebarWidgets.offline !== false,
   music: props.sidebarWidgets.music !== false,
 }))
-
+ 
 const maConnected = computed(() => props.maState?.connected || false)
 const playState = computed(() => props.maState?.active_player?.state || 'off')
-
+ 
 const weatherEntity = computed(() =>
   props.haEntities.find(e => e.entity_id === props.weatherEntityId) ||
   props.haEntities.find(e => e.entity_id.startsWith('weather.')) || null
@@ -101,28 +100,100 @@ const weatherEntity = computed(() =>
 const weatherText = computed(() => weatherEntity.value?.state || '未知')
 const weatherTemperature = computed(() => {
   const v = weatherEntity.value?.attributes?.temperature
-  return v !== undefined && v !== null ? `${Number(v).toFixed(1)}°` : '--'
+  return v !== undefined && v !== null ? `${Math.round(Number(v))}°` : '--'
 })
-const weatherHumidity = computed(() => {
-  const v = weatherEntity.value?.attributes?.humidity
-  return v !== undefined && v !== null ? `${Math.round(Number(v))}%` : '--'
+const weatherHigh = computed(() => {
+  const a = weatherEntity.value?.attributes || {}
+  return a.temperature_high || (a.forecast?.[0]?.temperature) || '--'
 })
-const weatherWind = computed(() => {
-  const v = weatherEntity.value?.attributes?.wind_speed
-  return v !== undefined && v !== null ? `${v}m/s` : null
+const weatherLow = computed(() => {
+  const a = weatherEntity.value?.attributes || {}
+  return a.temperature_low || (a.forecast?.[0]?.templow) || '--'
 })
-const weatherEmoji = computed(() => {
-  const s = (weatherEntity.value?.state || '').toLowerCase()
+
+const getFcEmoji = (cond) => {
+  const s = (cond || '').toLowerCase()
   if (s.includes('rain')) return '🌧️'
   if (s.includes('cloud')) return '☁️'
   if (s.includes('sun') || s.includes('clear')) return '☀️'
   if (s.includes('snow')) return '❄️'
   if (s.includes('fog') || s.includes('mist')) return '🌫️'
   return '🌤️'
+}
+
+const weatherForecast = computed(() => {
+  const fc = weatherEntity.value?.attributes?.forecast || []
+  return fc.slice(1, 4).map(item => {
+    try {
+      return {
+        weekday: new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }),
+        condition: item.condition,
+        temp: item.temperature
+      }
+    } catch(e) {
+      return { weekday: '?', condition: '', temp: '--' }
+    }
+  })
 })
 
-const topLights = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('light.')))
-const topClimates = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('climate.')))
+const weatherEmoji = computed(() => getFcEmoji(weatherEntity.value?.state))
+ 
+const activeStatusButtons = computed(() => {
+  const btns = []
+  
+  if (widgets.value.lights) {
+    btns.push({
+      id: 'lights',
+      label: 'Lighting',
+      icon: '💡',
+      value: `${props.summary.lights_on || 0}/${props.summary.lights_total || 0}`,
+      valueClass: 'text-yellow-400',
+      active: (props.summary.lights_on || 0) > 0,
+      indicatorClass: 'bg-yellow-400 shadow-[0_0_8px_#fbbf24]'
+    })
+  }
+  
+  if (widgets.value.climate) {
+    btns.push({
+      id: 'climate',
+      label: 'Climate',
+      icon: '❄️',
+      value: props.summary.climate_online || 0,
+      valueClass: 'text-blue-400',
+      active: (props.summary.climate_online || 0) > 0,
+      indicatorClass: 'bg-blue-400'
+    })
+  }
+  
+  if (widgets.value.battery) {
+    const lowCount = lowBatteryEntities.value.length
+    btns.push({
+      id: 'battery',
+      label: 'Battery',
+      icon: '🔋',
+      value: lowCount > 0 ? lowCount : 'Full',
+      valueClass: lowCount > 0 ? 'text-red-400' : 'text-emerald-400',
+      active: lowCount > 0,
+      indicatorClass: 'bg-red-400 shadow-[0_0_8px_#f87171]'
+    })
+  }
+  
+  if (widgets.value.offline) {
+    const offlineCount = offlineEntities.value.length
+    btns.push({
+      id: 'offline',
+      label: 'Status',
+      icon: '📡',
+      value: offlineCount > 0 ? offlineCount : 'Online',
+      valueClass: offlineCount > 0 ? 'text-orange-400' : 'text-white/20',
+      active: offlineCount > 0,
+      indicatorClass: 'bg-orange-400'
+    })
+  }
+  
+  return btns
+})
+
 const lowBatteryEntities = computed(() =>
   props.haEntities.filter(e => {
     const a = e.attributes || {}
