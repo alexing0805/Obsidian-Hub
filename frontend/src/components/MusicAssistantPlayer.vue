@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="p-4 flex-1 flex flex-col">
     <div class="glass-effect rounded-2xl p-4 card-hover flex-1 flex flex-col min-h-0">
       <div class="flex items-center gap-2 mb-3">
@@ -206,7 +206,12 @@ const applyMAState = (state) => {
 
     const images = currentItem.media_item?.metadata?.images || []
     const thumb = images.find((image) => image.type === 'thumb') || images[0]
-    artworkUrl.value = thumb?.path || ''
+    const path = thumb?.path || ''
+    if (path.startsWith('/')) {
+      artworkUrl.value = `${state.ma_base_url}${path}`
+    } else {
+      artworkUrl.value = path
+    }
   } else {
     trackName.value = ''
     artistName.value = ''
