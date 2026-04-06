@@ -146,24 +146,11 @@
     <div v-if="editMode" class="absolute bottom-3 left-1/2 -translate-x-1/2 glass-effect rounded-lg px-4 py-1.5 text-xs text-white/50">
       💡 点击图标切换开关 | 拖拽移动位置 | 🖼️ 上传户型图
     </div>
-
-    <!-- 实体详情弹窗 -->
-    <DetailOverlay
-      v-if="activeEntity"
-      :type="activeEntity.type"
-      :ha-entities="haEntities"
-      :ma-state="maState"
-      :weather-entity-id="weatherEntityId"
-      @close="activeEntity = null"
-      @toggle-light="$emit('entity-toggle', $event)"
-      @climate-action="$emit('climate-action', $event)"
-    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch, h } from 'vue'
-import DetailOverlay from './DetailOverlay.vue'
 
 const props = defineProps({
   haEntities: { type: Array, default: () => [] },
@@ -173,7 +160,7 @@ const props = defineProps({
   maState: { type: Object, default: () => ({}) },
 })
 
-const emit = defineEmits(['mapping-update', 'bg-update', 'entity-toggle', 'climate-action'])
+const emit = defineEmits(['mapping-update', 'bg-update', 'entity-toggle', 'climate-action', 'open'])
 
 const planContainer = ref(null)
 const editMode = ref(false)
@@ -307,7 +294,7 @@ const previewStyle = computed(() => ({
 const onIconClick = (mapping) => {
   if (editMode.value) return
   if (['空调', '传感器'].includes(mapping.type)) {
-    activeEntity.value = mapping
+    emit('open', mapping.type === '空调' ? 'climate' : 'sensor')
   } else {
     // Toggle directly
     const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)

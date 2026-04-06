@@ -38,82 +38,90 @@
           <div v-if="!allLights.length" class="text-center text-white/30 py-10">未检测到灯光设备</div>
         </div>
 
-        <!-- 空调详情 -->
+        <!-- 空调详情 (极简高级版) -->
         <div v-if="type === 'climate'">
-          <div class="space-y-4">
+          <div v-if="allClimates.length" class="space-y-6 animate-fade-in py-2">
             <div v-for="climate in allClimates" :key="climate.entity_id"
-              class="glass-effect rounded-2xl p-5 border border-blue-500/20">
+              class="glass-panel rounded-[3rem] p-8 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden group mb-6">
+              
+              <!-- 背景装饰光晕 -->
+              <div class="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
 
-              <!-- 设备名 -->
-              <div class="flex items-center justify-between mb-4">
-                <div class="font-medium">{{ climate.attributes?.friendly_name || climate.entity_id }}</div>
-                <div class="text-sm text-blue-300">{{ climate.state }}</div>
-              </div>
-
-              <!-- 当前温度 + 目标温度 -->
-              <div class="flex items-center gap-4 mb-4">
-                <div class="text-4xl font-bold text-blue-300">
-                  {{ climate.attributes?.current_temperature !== undefined ? climate.attributes.current_temperature + '°' : '--' }}
+              <!-- 头部：设备名与当前状态 -->
+              <div class="flex items-center justify-between mb-8">
+                <div>
+                  <div class="text-2xl font-black tracking-tight text-white/90">{{ climate.attributes?.friendly_name || '空调' }}</div>
+                  <div class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/60 mt-1">{{ climate.state }}模式</div>
                 </div>
-                <div class="flex-1">
-                  <div class="text-xs text-white/40 mb-1">目标温度</div>
-                  <input type="range" min="16" max="32" step="0.5"
-                    :value="climate.attributes?.temperature || 24"
-                    class="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-400"
-                    @change="setTemp(climate, $event.target.value)" />
-                  <div class="text-center text-sm text-blue-300 mt-1">{{ climate.attributes?.temperature || '--' }}°C</div>
+                <div class="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10 shadow-inner">
+                  <div class="text-right">
+                    <div class="text-[10px] font-black text-white/20 uppercase">室内温度</div>
+                    <div class="text-xl font-black text-white">{{ climate.attributes?.current_temperature || '--' }}°</div>
+                  </div>
+                  <div class="w-[1px] h-8 bg-white/10"></div>
+                  <div class="text-3xl">🌡️</div>
                 </div>
               </div>
 
-              <!-- HVAC 模式 -->
-              <div class="mb-3">
-                <div class="text-xs text-white/40 mb-2">模式</div>
-                <div class="flex flex-wrap gap-2">
-                  <button v-for="mode in hvacModes" :key="mode.value"
-                    class="px-3 py-1.5 text-xs rounded-lg border transition-colors"
-                    :class="climate.attributes?.hvac_modes?.includes(mode.value) && climate.state === mode.value
-                      ? 'border-blue-500/50 bg-blue-500/20 text-blue-300'
-                      : 'border-white/10 text-white/40 hover:border-white/20'"
-                    :disabled="!climate.attributes?.hvac_modes?.includes(mode.value)"
-                    @click="setMode(climate, mode.value)">
-                    {{ mode.icon }} {{ mode.label }}
-                  </button>
+              <!-- 核心控制区：大刻度盘 -->
+              <div class="flex items-center justify-center gap-12 mb-10">
+                <button @click="setTemp(climate, (climate.attributes?.temperature || 24) - 0.5)"
+                  class="w-16 h-16 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-3xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  －
+                </button>
+                
+                <div class="relative flex flex-col items-center">
+                  <div class="text-9xl font-black tracking-tighter text-white tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                    {{ Math.round(climate.attributes?.temperature || 24) }}<span class="text-4xl align-top mt-4 ml-1">°</span>
+                  </div>
+                  <div class="text-[10px] font-black uppercase tracking-[0.5em] text-white/20 mt-2">Setting Target</div>
                 </div>
+
+                <button @click="setTemp(climate, (climate.attributes?.temperature || 24) + 0.5)"
+                  class="w-16 h-16 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-3xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  ＋
+                </button>
               </div>
 
-              <!-- 风扇速度 -->
-              <div class="mb-3">
-                <div class="text-xs text-white/40 mb-2">风速</div>
-                <div class="flex flex-wrap gap-2">
-                  <button v-for="fan in fanSpeeds" :key="fan.value"
-                    class="px-3 py-1.5 text-xs rounded-lg border transition-colors"
-                    :class="climate.attributes?.fan_mode === fan.value
-                      ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-300'
-                      : 'border-white/10 text-white/40 hover:border-white/20'"
-                    @click="setFanMode(climate, fan.value)">
-                    {{ fan.icon }} {{ fan.label }}
-                  </button>
+              <!-- 底部控制：HVAC 模式 + 风速 (完全动态) -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                <!-- 模式切换 -->
+                <div class="space-y-4">
+                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-1">Operation Mode</div>
+                  <div class="flex flex-wrap gap-2.5">
+                    <button v-for="mode in getHvacModes(climate)" :key="mode.value"
+                      class="flex-1 min-w-[80px] px-4 py-3.5 text-[11px] font-black rounded-[1.5rem] border transition-all uppercase tracking-wider shadow-sm"
+                      :class="climate.state === mode.value
+                        ? 'border-blue-500/50 bg-blue-500/20 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.2)]'
+                        : 'border-white/5 bg-white/[0.02] text-white/30 hover:border-white/20 hover:text-white/60'"
+                      @click="setMode(climate, mode.value)">
+                      <div class="text-xl mb-1">{{ mode.icon }}</div>
+                      {{ mode.label }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 风速切换 (动态获取级数) -->
+                <div class="space-y-4">
+                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-1">Fan Speed</div>
+                  <div class="flex flex-wrap gap-2.5">
+                    <button v-for="fan in getFanModes(climate)" :key="fan"
+                      class="flex-1 min-w-[70px] px-4 py-3.5 text-[11px] font-black rounded-[1.5rem] border transition-all uppercase tracking-tighter"
+                      :class="climate.attributes?.fan_mode === fan
+                        ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.2)]'
+                        : 'border-white/5 bg-white/[0.02] text-white/30 hover:border-white/20 hover:text-white/60'"
+                      @click="setFanMode(climate, fan)">
+                      <div class="text-lg mb-1">🌬️</div>
+                      {{ fan }}
+                    </button>
+                  </div>
                 </div>
               </div>
-
-              <!-- 摆风 -->
-              <div v-if="climate.attributes?.swing_modes?.length">
-                <div class="text-xs text-white/40 mb-2">摆风</div>
-                <div class="flex flex-wrap gap-2">
-                  <button v-for="swing in (climate.attributes.swing_modes || [])" :key="swing"
-                    class="px-3 py-1.5 text-xs rounded-lg border transition-colors"
-                    :class="climate.attributes?.swing_mode === swing
-                      ? 'border-green-500/50 bg-green-500/20 text-green-300'
-                      : 'border-white/10 text-white/40 hover:border-white/20'"
-                    @click="setSwing(climate, swing)">
-                    {{ swing }}
-                  </button>
-                </div>
-              </div>
-
             </div>
           </div>
-          <div v-if="!allClimates.length" class="text-center text-white/30 py-10">未检测到空调设备</div>
+          <div v-else class="text-center text-white/30 py-20 italic font-black uppercase tracking-widest bg-white/5 rounded-[3rem] border border-white/5">
+             Searching Climate Entity...
+          </div>
         </div>
 
         <!-- 天气详情 (增强版) -->
@@ -136,7 +144,7 @@
               </div>
             </div>
 
-            <!-- 3. 未来预报 (还原侧边栏被精简的内容) -->
+            <!-- 3. 未来预报 -->
             <div v-if="sidebarForecast.length" class="space-y-4 px-2 pt-4 border-t border-white/5">
               <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7-Day Forecast</div>
               <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hidden">
@@ -208,7 +216,7 @@ import { computed } from 'vue'
 import MusicAssistantPlayer from './MusicAssistantPlayer.vue'
 
 const props = defineProps({
-  type: { type: String, default: '' },  // lights | climate | weather | battery | offline | music
+  type: { type: String, default: '' },
   haEntities: { type: Array, default: () => [] },
   maState: { type: Object, default: () => ({}) },
   weatherEntityId: { type: String, default: '' },
@@ -248,6 +256,15 @@ const weatherEntity = computed(() =>
 const weatherTemperature = computed(() => {
   const v = weatherEntity.value?.attributes?.temperature
   return v !== undefined && v !== null ? `${Number(v).toFixed(1)}°` : '--'
+})
+const weatherEmoji = computed(() => {
+  const s = (weatherEntity.value?.state || '').toLowerCase()
+  if (s.includes('rain')) return '🌧️'
+  if (s.includes('cloud')) return '☁️'
+  if (s.includes('sun') || s.includes('clear')) return '☀️'
+  if (s.includes('snow')) return '❄️'
+  if (s.includes('fog') || s.includes('mist')) return '🌫️'
+  return '🌤️'
 })
 const weatherText = computed(() => {
   const s = (weatherEntity.value?.state || '').toLowerCase()
@@ -299,21 +316,22 @@ const sidebarForecast = computed(() => {
   })
 })
 
-const hvacModes = [
-  { value: 'off', label: '关', icon: '⭕' },
-  { value: 'heat', label: '加热', icon: '🔥' },
-  { value: 'cool', label: '制冷', icon: '❄️' },
-  { value: 'auto', label: '自动', icon: '🔄' },
-  { value: 'dry', label: '除湿', icon: '💧' },
-  { value: 'fan_only', label: '送风', icon: '🌬️' },
-]
-const fanSpeeds = [
-  { value: 'low', label: '低速', icon: '🍃' },
-  { value: 'medium', label: '中速', icon: '🍃🍃' },
-  { value: 'high', label: '高速', icon: '🍃🍃🍃' },
-  { value: 'auto', label: '自动', icon: '🔄' },
-  { value: 'off', label: '关闭', icon: '⭕' },
-]
+const getHvacModes = (climate) => {
+  const modes = climate.attributes?.hvac_modes || ['off', 'heat', 'cool', 'auto', 'dry', 'fan_only']
+  const map = {
+    'off': { label: '关', icon: '⭕' },
+    'heat': { label: '制热', icon: '🔥' },
+    'cool': { label: '制冷', icon: '❄️' },
+    'auto': { label: '自动', icon: '🔄' },
+    'dry': { label: '除湿', icon: '💧' },
+    'fan_only': { label: '送风', icon: '🌬️' }
+  }
+  return modes.map(m => map[m] ? { ...map[m], value: m } : { value: m, label: m.toUpperCase(), icon: '⚙️' })
+}
+
+const getFanModes = (climate) => {
+  return climate.attributes?.fan_mode_list || climate.attributes?.fan_modes || ['low', 'medium', 'high', 'auto']
+}
 
 const batteryColor = (v) => {
   if (v <= 10) return '#ef4444'
@@ -327,3 +345,30 @@ const setMode = (entity, mode) => emit('climate-action', { entity, action: 'mode
 const setFanMode = (entity, fan) => emit('climate-action', { entity, action: 'fan', value: fan })
 const setSwing = (entity, swing) => emit('climate-action', { entity, action: 'swing', value: swing })
 </script>
+
+<style scoped>
+.animate-fade-in {
+  animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+.animate-bounce-subtle {
+  animation: bounce-subtle 3s ease-in-out infinite;
+}
+</style>

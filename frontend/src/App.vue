@@ -70,6 +70,7 @@
               @mapping-update="onMappingUpdate"
               @bg-update="onBgUpdate"
               @climate-action="onClimateAction"
+              @open="activeDetail = $event"
               class="w-full h-full"
             />
           </transition>

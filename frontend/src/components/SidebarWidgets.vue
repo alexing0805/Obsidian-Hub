@@ -1,22 +1,22 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden p-6 space-y-6">
+  <div class="flex flex-col h-full overflow-hidden p-6 space-y-3">
   
-    <!-- 1. 独立时钟卡片 (极简高级) -->
-    <div class="glass-panel rounded-[2rem] p-5 relative overflow-hidden shrink-0 shadow-xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+    <!-- 1. 独立时钟卡片 (简约紧凑) -->
+    <div class="glass-panel rounded-[2rem] p-4 relative overflow-hidden shrink-0 shadow-xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
       <div class="flex flex-col items-center">
-        <div class="text-5xl font-black tracking-tighter font-heading tabular-nums leading-none mb-2 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{{ currentTime }}</div>
-        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-white/30">{{ currentDate }}</div>
+        <div class="text-5xl font-black tracking-tighter font-heading tabular-nums leading-none mb-1 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{{ currentTime }}</div>
+        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">{{ currentDate }}</div>
       </div>
     </div>
 
-    <!-- 2. 精简气象卡片 (基础信息) -->
+    <!-- 2. 精简气象卡片 -->
     <div v-if="widgets.weather" 
-      class="glass-panel rounded-[2rem] p-5 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
+      class="glass-panel rounded-[2rem] p-4 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
       @click="$emit('open', 'weather')"
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <span class="text-5xl drop-shadow-lg group-hover:scale-105 transition-transform duration-500">{{ weatherEmoji }}</span>
+          <span class="text-4xl drop-shadow-lg group-hover:scale-105 transition-transform duration-500">{{ weatherEmoji }}</span>
           <div class="flex flex-col">
             <span class="text-3xl font-heading font-black leading-none text-white tracking-tighter">{{ weatherTemperature }}</span>
             <span class="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest mt-1">{{ weatherText }}</span>
@@ -33,7 +33,7 @@
       </div>
     </div>
   
-    <!-- 3. 自适应功能按键 (拉伸填满) -->
+    <!-- 3. 自适应功能按键 -->
     <div class="flex flex-row gap-3 shrink-0">
       <template v-for="btn in activeStatusButtons" :key="btn.id">
         <div 
@@ -43,14 +43,12 @@
           <div class="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-500">{{ btn.icon }}</div>
           <div class="text-[12px] font-black leading-none mb-0.5" :class="btn.valueClass">{{ btn.value }}</div>
           <div class="text-[7px] font-black uppercase tracking-wider text-white/20">{{ btn.label }}</div>
-          
-          <!-- 活跃指示器 -->
           <div v-if="btn.active" class="absolute top-2 right-4 w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" :class="btn.indicatorClass"></div>
         </div>
       </template>
     </div>
   
-    <!-- 4. 音乐播放器 (占据核心纵向空间) -->
+    <!-- 4. 音乐播放器 (垂直 100% 占满) -->
     <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0">
       <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
     </div>
