@@ -561,13 +561,15 @@ async def broadcast(payload: dict[str, Any]) -> None:
 
 async def fetch_ha_forecasts(entity_id: str) -> list[dict[str, Any]]:
     headers = {"Authorization": f"Bearer {_HA_TOKEN}", "Content-Type": "application/json"}
-    url = f"{_HA_URL}/api/services/weather/get_forecasts"
+    url = f"{_HA_URL}/api/services/weather/get_forecasts?return_response=true"
     try:
         async with httpx.AsyncClient(timeout=5) as client:
             resp = await client.post(url, headers=headers, json={"entity_id": entity_id, "type": "daily"})
             if resp.status_code == 200:
                 data = resp.json()
-                return data.get(entity_id, {}).get("forecast", [])
+                # HA wraps response under 'service_response' when ?return_response=true
+                forecast_data = data.get("service_response", data).get(entity_id, {})
+                return forecast_data.get("forecast", [])
     except Exception as e:
         print(f"Failed to fetch HA forecasts for {entity_id}: {e}")
     return []
