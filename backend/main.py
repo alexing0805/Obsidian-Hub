@@ -56,16 +56,32 @@ def to_ma_base_url(ma_ws_url: str) -> str:
     return urlunparse((scheme, parsed.netloc, "", "", "", "")).rstrip("/")
 
 
-HA_URL = normalize_ha_url(os.getenv("HA_URL", ""))
-HA_TOKEN = os.getenv("HA_TOKEN", "").strip()
-MA_URL = normalize_ma_url(os.getenv("MA_URL", ""))
-MA_TOKEN = os.getenv("MA_TOKEN", "").strip()
-MA_BASE_URL = to_ma_base_url(MA_URL)
-HOST = os.getenv("HOST", "0.0.0.0")
-PORT = int(os.getenv("PORT", "8000"))
-HA_REFRESH_INTERVAL = int(os.getenv("HA_REFRESH_INTERVAL", "15"))
-MA_REFRESH_INTERVAL = int(os.getenv("MA_REFRESH_INTERVAL", "5"))
-MA_COMMAND_TIMEOUT = int(os.getenv("MA_COMMAND_TIMEOUT", "10"))
+# ── Config (loaded from settings.json, env vars are first-run fallbacks) ────
+_HOST = os.getenv("HOST", "0.0.0.0")
+_PORT = int(os.getenv("PORT", "8000"))
+_MA_COMMAND_TIMEOUT = int(os.getenv("MA_COMMAND_TIMEOUT", "10"))
+
+# These will be overridden once settings are loaded
+_HA_URL = normalize_ha_url(os.getenv("HA_URL", ""))
+_HA_TOKEN = os.getenv("HA_TOKEN", "").strip()
+_MA_URL = normalize_ma_url(os.getenv("MA_URL", ""))
+_MA_TOKEN = os.getenv("MA_TOKEN", "").strip()
+
+
+def _get_ha_config():
+    return {"url": _HA_URL, "token": _HA_TOKEN}
+
+
+def _get_ma_config():
+    return {"url": _MA_URL, "token": _MA_TOKEN, "base_url": to_ma_base_url(_MA_URL)}
+
+
+def _reload_ha_ma_from_settings(settings: dict):
+    global _HA_URL, _HA_TOKEN, _MA_URL, _MA_TOKEN
+    _HA_URL = normalize_ha_url(settings.get("ha_url", _HA_URL))
+    _HA_TOKEN = settings.get("ha_token", _HA_TOKEN) or ""
+    _MA_URL = normalize_ma_url(settings.get("ma_url", _MA_URL))
+    _MA_TOKEN = settings.get("ma_token", _MA_TOKEN) or ""
 
 app = FastAPI(title="Obsidian Hub API")
 app.add_middleware(
@@ -101,7 +117,7 @@ ma_state: dict[str, Any] = {
     "queue_player_map": {},
     "active_queue_id": None,
     "active_player_id": None,
-    "ma_base_url": MA_BASE_URL,
+    "ma_base_url": _get_ma_config()["base_url"],
     "refreshed_at": None,
 }
 ma_signature: tuple[Any, ...] = ()
@@ -115,7 +131,7 @@ def utc_now_iso() -> str:
 
 
 def ensure_ha_token() -> None:
-    if not HA_TOKEN:
+    if not _HA_TOKEN:
         raise HTTPException(status_code=500, detail="HA_TOKEN is not configured")
 
 
@@ -327,11 +343,11 @@ def build_ma_signature(state: dict[str, Any]) -> tuple[Any, ...]:
 async def fetch_ha_entities_from_server() -> list[dict[str, Any]]:
     ensure_ha_token()
     headers = {
-        "Authorization": f"Bearer {HA_TOKEN}",
+        "Authorization": f"Bearer {_HA_TOKEN}",
         "Content-Type": "application/json",
     }
     async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(f"{HA_URL}/api/states", headers=headers)
+        response = await client.get(f"{_HA_URL}/api/states", headers=headers)
         response.raise_for_status()
         data = response.json()
         if not isinstance(data, list):
@@ -342,7 +358,7 @@ async def fetch_ha_entities_from_server() -> list[dict[str, Any]]:
 async def call_ha_service_server(call: HAServiceCall) -> Any:
     ensure_ha_token()
     headers = {
-        "Authorization": f"Bearer {HA_TOKEN}",
+        "Authorization": f"Bearer {_HA_TOKEN}",
         "Content-Type": "application/json",
     }
     payload: dict[str, Any] = {}
@@ -352,7 +368,7 @@ async def call_ha_service_server(call: HAServiceCall) -> Any:
         payload.update(call.service_data)
     async with httpx.AsyncClient(timeout=10) as client:
         response = await client.post(
-            f"{HA_URL}/api/services/{call.domain}/{call.service}",
+            f"{_HA_URL}/api/services/{call.domain}/{call.service}",
             headers=headers,
             json=payload,
         )
@@ -507,12 +523,12 @@ class MusicAssistantClient:
             "queue_player_map": queue_player_map,
             "active_queue_id": active_queue_id,
             "active_player_id": active_player_id,
-            "ma_base_url": MA_BASE_URL,
+            "ma_base_url": _get_ma_config()["base_url"],
             "refreshed_at": utc_now_iso(),
         }
 
 
-ma_client = MusicAssistantClient(MA_URL, MA_TOKEN, timeout_seconds=MA_COMMAND_TIMEOUT)
+ma_client = MusicAssistantClient(_MA_URL, _MA_TOKEN, timeout_seconds=_MA_COMMAND_TIMEOUT)
 
 
 async def broadcast(payload: dict[str, Any]) -> None:
@@ -585,7 +601,7 @@ async def ha_poll_loop() -> None:
                 )
         except Exception as exc:
             print(f"[HA] Poll error: {exc}")
-        await asyncio.sleep(max(5, HA_REFRESH_INTERVAL))
+        await asyncio.sleep(max(5, current_settings.get("ha_refresh_interval", 15)))
 
 
 async def ma_poll_loop() -> None:
@@ -596,7 +612,7 @@ async def ma_poll_loop() -> None:
                 await broadcast({"type": "ma_state", "state": ma_state})
         except Exception as exc:
             print(f"[MA] Poll error: {exc}")
-        await asyncio.sleep(max(2, MA_REFRESH_INTERVAL))
+        await asyncio.sleep(max(2, current_settings.get("ma_refresh_interval", 5)))
 
 
 @app.get("/api/status")
@@ -608,10 +624,10 @@ async def get_status():
     return {
         "success": True,
         "status": {
-            "ha_url": HA_URL,
+            "ha_url": _HA_URL,
             "ha_connected": entity_count > 0,
             "ha_entity_count": entity_count,
-            "ma_url": MA_URL,
+            "ma_url": _MA_URL,
             "ma_connected": bool(current_ma_state.get("connected")),
             "ws_clients": len(active_connections),
             "last_ma_refresh": current_ma_state.get("refreshed_at"),
@@ -712,14 +728,14 @@ async def send_ma_cmd(cmd: MACmd):
 
 @app.get("/api/config")
 async def get_config():
-    """Return current HA/MA configuration (read-only, from environment)."""
+    """Return current HA/MA configuration (read-only, from current runtime config)."""
     return {
         "success": True,
         "config": {
-            "ha_url": HA_URL,
-            "ha_token_masked": ("***" + HA_TOKEN[-8:]) if HA_TOKEN else "",
-            "ma_url": MA_URL,
-            "ma_token_masked": ("***" + MA_TOKEN[-8:]) if MA_TOKEN else "",
+            "ha_url": _HA_URL,
+            "ha_token_masked": ("***" + _HA_TOKEN[-8:]) if _HA_TOKEN else "",
+            "ma_url": _MA_URL,
+            "ma_token_masked": ("***" + _MA_TOKEN[-8:]) if _MA_TOKEN else "",
         }
     }
 
@@ -730,22 +746,19 @@ async def get_settings():
     return {
         "success": True,
         "settings": {
-            "ha_refresh_interval": current_settings.get("ha_refresh_interval", 15),
-            "ma_refresh_interval": current_settings.get("ma_refresh_interval", 5),
-            "temperature_entity": current_settings.get("temperature_entity", ""),
-            "humidity_entity": current_settings.get("humidity_entity", ""),
-            "light_mapping": current_settings.get("light_mapping", DEFAULT_SETTINGS["light_mapping"]),
-            "light_positions": current_settings.get("light_positions", DEFAULT_SETTINGS["light_positions"]),
-            "show_sidebar": current_settings.get("show_sidebar", True),
-            "clock_24h": current_settings.get("clock_24h", True),
+            **current_settings,
+            "ha_token": _HA_TOKEN,
+            "ma_token": _MA_TOKEN,
         }
     }
 
 
 @app.put("/api/settings")
 async def update_settings(new_settings: dict[str, Any]):
-    """Update settings and persist to disk."""
+    """Update settings and persist to disk. Reloads HA/MA connections if config changed."""
     allowed = {
+        "ha_url", "ha_token",
+        "ma_url", "ma_token",
         "ha_refresh_interval", "ma_refresh_interval",
         "temperature_entity", "humidity_entity",
         "light_mapping", "light_positions",
@@ -754,7 +767,9 @@ async def update_settings(new_settings: dict[str, Any]):
     filtered = {k: v for k, v in new_settings.items() if k in allowed}
     current_settings.update(filtered)
     save_settings(current_settings)
-    return {"success": True, "settings": dict(current_settings)}
+    _reload_ha_ma_from_settings(current_settings)
+    asyncio.create_task(_reload_connections())
+    return {"success": True, "settings": {**current_settings, "ha_token": _HA_TOKEN, "ma_token": _MA_TOKEN}}
 
 
 @app.post("/api/restart")
@@ -765,15 +780,25 @@ async def restart_service():
 
 
 async def _reload_connections():
-    """Reload HA/MA state with current settings."""
+    """Reload HA/MA state with updated settings."""
+    # Update MA client config
+    ma_client.url = _MA_URL
+    ma_client.token = _MA_TOKEN
+    # Restart MA connect loop to pick up new URL/token
+    for name in ("ma_connect_task", "ma_poll_task"):
+        t = getattr(app.state, name, None)
+        if t:
+            t.cancel()
+    ma_client._stopping = False
+    ma_client._pending.clear()
+    ma_client.connected_event.clear()
+    ma_client.ws = None
+    app.state.ma_connect_task = asyncio.create_task(ma_client.run())
+    app.state.ma_poll_task = asyncio.create_task(ma_poll_loop())
     try:
         await refresh_ha_state_once()
     except Exception as exc:
         print(f"[Reload] HA refresh failed: {exc}")
-    try:
-        await refresh_ma_state_once()
-    except Exception as exc:
-        print(f"[Reload] MA refresh failed: {exc}")
 
 
 @app.websocket("/api/ws")
@@ -807,6 +832,10 @@ DEFAULT_SETTINGS = {
     "ma_refresh_interval": 5,
     "temperature_entity": "",
     "humidity_entity": "",
+    "ha_url": "",
+    "ha_token": "",
+    "ma_url": "",
+    "ma_token": "",
     "light_mapping": ["", "", "", "", "", "", "", ""],
     "light_positions": [[140, 130], [240, 170], [560, 130], [660, 170],
                         [120, 350], [280, 430], [430, 390], [620, 350]],
@@ -832,6 +861,22 @@ def save_settings(settings: dict[str, Any]) -> None:
         print(f"[Settings] Save failed: {exc}")
 
 current_settings = load_settings()
+
+# Override with env vars only on very first load (first-run bootstrap)
+if _HA_URL and not current_settings.get("ha_url"):
+    current_settings["ha_url"] = _HA_URL
+if _HA_TOKEN and not current_settings.get("ha_token"):
+    current_settings["ha_token"] = _HA_TOKEN
+if _MA_URL and not current_settings.get("ma_url"):
+    current_settings["ma_url"] = _MA_URL
+if _MA_TOKEN and not current_settings.get("ma_token"):
+    current_settings["ma_token"] = _MA_TOKEN
+
+# Sync module-level vars
+_HA_URL = normalize_ha_url(current_settings.get("ha_url", ""))
+_HA_TOKEN = current_settings.get("ha_token", "") or ""
+_MA_URL = normalize_ma_url(current_settings.get("ma_url", ""))
+_MA_TOKEN = current_settings.get("ma_token", "") or ""
 
 # ── Frontend static ────────────────────────────────────────────────────────────
 frontend_path = Path(__file__).parent.parent / "frontend" / "dist"

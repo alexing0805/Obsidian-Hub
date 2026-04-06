@@ -6,7 +6,7 @@
       <div class="flex items-center justify-between">
         <div>
           <h2 class="text-lg font-bold">系统设置</h2>
-          <p class="text-xs text-white/40 mt-0.5">实时保存，无需重启</p>
+          <p class="text-xs text-white/40 mt-0.5">保存后自动重连</p>
         </div>
         <span class="text-xs px-2 py-1 rounded" :class="saveStatusClass">{{ saveStatusText }}</span>
       </div>
@@ -25,35 +25,30 @@
         </div>
 
         <div class="space-y-3">
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">HA URL</label>
-            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ha_url || '未配置' }}</span>
+          <div>
+            <label class="block text-xs text-white/60 mb-1">HA URL</label>
+            <input v-model="settings.ha_url" type="text" placeholder="http://192.168.1.100:8123"
+              class="settings-input w-full" @input="markDirty" />
+          </div>
+          <div>
+            <label class="block text-xs text-white/60 mb-1">HA Token</label>
+            <input v-model="settings.ha_token" type="password" placeholder="Long-Lived Access Token"
+              class="settings-input w-full" @input="markDirty" />
           </div>
           <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">HA Token</label>
-            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ha_token_masked || '未配置' }}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">刷新间隔</label>
-            <input
-              v-model.number="settings.ha_refresh_interval"
-              type="number" min="5" max="300"
-              class="settings-input flex-1"
-              @input="markDirty"
-            />
+            <label class="text-xs text-white/60 w-20 shrink-0">刷新间隔</label>
+            <input v-model.number="settings.ha_refresh_interval" type="number" min="5" max="300"
+              class="settings-input w-24" @input="markDirty" />
             <span class="text-xs text-white/40">秒</span>
           </div>
           <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">温度实体</label>
+            <label class="text-xs text-white/60 w-20 shrink-0">温度实体</label>
             <select v-model="settings.temperature_entity" class="settings-input flex-1" @change="markDirty">
               <option value="">自动选择</option>
               <option v-for="e in temperatureEntities" :key="e.entity_id" :value="e.entity_id">
                 {{ e.attributes?.friendly_name || e.entity_id }}
               </option>
             </select>
-          </div>
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-white/40 w-28 shrink-0 text-right">* 如需修改 HA 配置，请更新容器环境变量后重启</label>
           </div>
           <div class="pt-1">
             <button class="px-4 py-2 text-sm rounded-lg border transition-colors"
@@ -79,22 +74,20 @@
         </div>
 
         <div class="space-y-3">
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">MA WebSocket</label>
-            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ma_url || '未配置' }}</span>
+          <div>
+            <label class="block text-xs text-white/60 mb-1">MA WebSocket URL</label>
+            <input v-model="settings.ma_url" type="text" placeholder="ws://192.168.1.100:8095/ws"
+              class="settings-input w-full" @input="markDirty" />
+          </div>
+          <div>
+            <label class="block text-xs text-white/60 mb-1">MA Token</label>
+            <input v-model="settings.ma_token" type="password" placeholder="长期访问令牌"
+              class="settings-input w-full" @input="markDirty" />
           </div>
           <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">MA Token</label>
-            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ma_token_masked || '未配置' }}</span>
-          </div>
-          <div class="flex items-center gap-3">
-            <label class="text-xs text-white/60 w-28 shrink-0">刷新间隔</label>
-            <input
-              v-model.number="settings.ma_refresh_interval"
-              type="number" min="2" max="60"
-              class="settings-input flex-1"
-              @input="markDirty"
-            />
+            <label class="text-xs text-white/60 w-20 shrink-0">刷新间隔</label>
+            <input v-model.number="settings.ma_refresh_interval" type="number" min="2" max="60"
+              class="settings-input w-24" @input="markDirty" />
             <span class="text-xs text-white/40">秒</span>
           </div>
           <div class="pt-1">
@@ -180,17 +173,13 @@
       <!-- Actions -->
       <div class="flex items-center gap-3">
         <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-          :disabled="saving"
+          :disabled="saving || !isDirty"
           @click="saveSettings">
           {{ saving ? '保存中...' : '保存设置' }}
         </button>
         <button class="px-5 py-2 border border-white/20 text-white/60 hover:text-white hover:border-white/40 rounded-lg text-sm transition-colors"
           @click="resetSettings">
           重置
-        </button>
-        <button class="px-5 py-2 border border-white/10 text-white/30 hover:text-white/50 rounded-lg text-sm transition-colors ml-auto"
-          @click="restartService">
-          重启服务
         </button>
       </div>
 
@@ -239,9 +228,13 @@ const emit = defineEmits(['save', 'restart', 'toggle-sidebar', 'settings-loaded'
 
 const saving = ref(false)
 const saveStatus = ref('idle')
-const config = ref({ ha_url: '', ha_token_masked: '', ma_url: '', ma_token_masked: '' })
+const isDirty = ref(false)
 
 const defaultSettings = {
+  ha_url: '',
+  ha_token: '',
+  ma_url: '',
+  ma_token: '',
   ha_refresh_interval: 15,
   ma_refresh_interval: 5,
   temperature_entity: '',
@@ -289,8 +282,6 @@ const systemInfo = computed(() => ({
   ws_clients: props.systemStatus.ws_clients || 0
 }))
 
-const isDirty = ref(false)
-
 const markDirty = () => { isDirty.value = true }
 
 const toggleSidebar = () => {
@@ -309,7 +300,6 @@ const saveSettings = async () => {
       body: JSON.stringify(settings.value)
     })
     if (!r.ok) throw new Error(await r.text())
-    const data = await r.json()
     saveStatus.value = 'success'
     isDirty.value = false
     emit('save', settings.value)
@@ -335,7 +325,7 @@ const testHAConnection = async () => {
     const s = d.status || {}
     const msg = s.ha_connected
       ? `✅ HA 已连接\n实体数: ${s.ha_entity_count}`
-      : `❌ HA 未连接，请检查 URL 和 Token（需重启容器生效）`
+      : `❌ HA 未连接，请检查 URL 和 Token`
     alert(msg)
   } catch {
     alert('❌ HA 连接失败')
@@ -347,9 +337,7 @@ const testMAConnection = async () => {
     const r = await fetch('/api/status')
     const d = await r.json()
     const s = d.status || {}
-    const msg = s.ma_connected
-      ? '✅ MA 已连接'
-      : '❌ MA 未连接，请检查 URL 和 Token（需重启容器生效）'
+    const msg = s.ma_connected ? '✅ MA 已连接' : '❌ MA 未连接，请检查 URL 和 Token'
     alert(msg)
   } catch {
     alert('❌ MA 连接失败')
@@ -362,17 +350,10 @@ const restartService = () => {
 
 const loadSettings = async () => {
   try {
-    const [settingsR, configR] = await Promise.all([
-      fetch('/api/settings'),
-      fetch('/api/config')
-    ])
-    if (settingsR.ok) {
-      const data = await settingsR.json()
+    const r = await fetch('/api/settings')
+    if (r.ok) {
+      const data = await r.json()
       settings.value = { ...defaultSettings, ...data.settings }
-    }
-    if (configR.ok) {
-      const data = await configR.json()
-      config.value = data.config || {}
     }
   } catch (e) {
     console.error('Failed to load settings:', e)
