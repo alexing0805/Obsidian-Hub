@@ -104,6 +104,7 @@
               :current-time="currentTime"
               :current-date="currentDate"
               :weather-entity-id="currentSettings.weather_entity_id || ''"
+              :weather-forecast="summary.weather?.forecast || []"
               :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
               @open="activeDetail = $event"
               @toggle-light="onEntityToggle"

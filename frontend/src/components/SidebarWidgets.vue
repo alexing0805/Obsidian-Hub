@@ -78,6 +78,7 @@ const props = defineProps({
   currentTime: { type: String, default: '' },
   currentDate: { type: String, default: '' },
   weatherEntityId: { type: String, default: '' },
+  weatherForecast: { type: Array, default: () => [] },
   sidebarWidgets: { type: Object, default: () => ({}) },
 })
  
@@ -137,8 +138,8 @@ const getFcEmoji = (cond) => {
 }
 
 const weatherForecast = computed(() => {
-  // 优先使用后端聚合的预报
-  const fc = weatherData.value?.forecast || weatherEntity.value?.attributes?.forecast || []
+  // 优先使用 props 传入的预报（来自 summary），其次回退到 entity attributes
+  const fc = props.weatherForecast || weatherData.value?.forecast || weatherEntity.value?.attributes?.forecast || []
   return fc.slice(0, 3).map(item => {
     try {
       const dt = item.datetime ? new Date(item.datetime) : new Date();
