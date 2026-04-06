@@ -1,93 +1,112 @@
 <template>
-  <div class="p-4 flex-1 flex flex-col">
-    <div class="glass-effect rounded-2xl p-4 card-hover flex-1 flex flex-col min-h-0">
-      <div class="flex items-center gap-2 mb-3">
-        <div class="w-2 h-2 rounded-full" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
-        <span class="text-[10px] font-semibold tracking-wider uppercase" :class="maConnected ? 'text-emerald-300/80' : 'text-red-300/70'">
+  <div class="p-2 flex-1 flex flex-col min-h-0">
+    <div class="glass-panel rounded-[2rem] p-5 card-hover flex-1 flex flex-col min-h-0 relative overflow-hidden group">
+      
+      <!-- 动态氛围背光 -->
+      <div v-if="playState === 'playing'" 
+        class="absolute -top-20 -right-20 w-64 h-64 bg-cyan-500/10 blur-[100px] rounded-full animate-pulse transition-all duration-1000"></div>
+      <div v-if="playState === 'playing'" 
+        class="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-500/10 blur-[100px] rounded-full animate-pulse transition-all duration-1000 delay-700"></div>
+
+      <div class="flex items-center gap-2.5 mb-5 relative z-10">
+        <div class="w-2.5 h-2.5 rounded-full ring-4 ring-black/20" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
+        <span class="text-[10px] font-extrabold tracking-[0.2em] uppercase font-heading" :class="maConnected ? 'text-emerald-400/80' : 'text-red-400/70'">
           {{ maConnected ? 'MA ONLINE' : 'MA OFFLINE' }}
         </span>
-        <span class="text-[10px] text-white/20 uppercase ml-auto truncate max-w-[130px]">{{ queueLabel }}</span>
+        <div class="flex-1"></div>
+        <span class="text-[10px] text-white/20 font-bold uppercase tracking-widest truncate max-w-[120px]">{{ queueLabel }}</span>
       </div>
-
-      <div class="aspect-square rounded-xl overflow-hidden mb-4 relative group bg-black/20">
+ 
+      <!-- 封面艺术 -->
+      <div class="aspect-square rounded-[1.5rem] overflow-hidden mb-6 relative group/cover shadow-2xl ring-1 ring-white/10 bg-black/40">
         <img
           :src="artworkUrl || fallbackArtwork"
           alt="Cover"
-          class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          class="w-full h-full object-cover transition-transform duration-700 group-hover/cover:scale-110"
         />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
-
-        <div v-if="playState === 'playing'" class="absolute bottom-2 right-2 w-7 h-7 bg-emerald-500/90 rounded-full flex items-center justify-center shadow-lg backdrop-blur-sm">
-          <div class="flex gap-[2px]">
-            <span class="w-[2.5px] h-3 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_infinite]"></span>
-            <span class="w-[2.5px] h-3 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_0.15s_infinite]"></span>
-            <span class="w-[2.5px] h-3 bg-white rounded-full animate-[bounce_0.6s_ease-in-out_0.3s_infinite]"></span>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60"></div>
+ 
+        <div v-if="playState === 'playing'" class="absolute bottom-4 right-4 w-10 h-10 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-xl">
+          <div class="flex gap-[3px] items-end pb-1">
+            <span class="w-[3px] h-3 bg-cyan-400 rounded-full animate-[music-bar_0.8s_ease-in-out_infinite]"></span>
+            <span class="w-[3px] h-5 bg-cyan-400 rounded-full animate-[music-bar_0.8s_ease-in-out_0.2s_infinite]"></span>
+            <span class="w-[3px] h-4 bg-cyan-400 rounded-full animate-[music-bar_0.8s_ease-in-out_0.4s_infinite]"></span>
           </div>
         </div>
       </div>
-
-      <div class="text-center mb-4">
-        <h3 class="font-bold text-sm text-white/95 truncate">{{ trackName || '暂无播放' }}</h3>
-        <p class="text-xs text-cyan-300/70 truncate mt-0.5">{{ artistName || '--' }}</p>
+ 
+      <!-- 曲目信息 -->
+      <div class="text-center mb-6 relative z-10 px-2">
+        <h3 class="font-extrabold text-lg leading-tight text-white mb-1 font-heading truncate">{{ trackName || 'CHILLING...' }}</h3>
+        <p class="text-sm font-medium text-cyan-400/80 truncate tracking-wide opacity-80">{{ artistName || 'Music Assistant' }}</p>
       </div>
-
-      <div class="mb-3">
+ 
+      <!-- 进度条 -->
+      <div class="mb-6 px-1">
         <div
-          class="progress-bar-track w-full h-1.5 bg-white/20 rounded-full cursor-pointer group/bar select-none"
+          class="progress-bar-track w-full h-2.5 bg-white/5 rounded-full cursor-pointer group/bar relative overflow-hidden"
           @click="onProgressClick"
           @mousedown.prevent="onProgressMouseDown"
         >
           <div
-            class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full relative transition-all duration-150"
+            class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full relative shadow-[0_0_15px_rgba(34,211,238,0.4)]"
             :style="{ width: progressPercent + '%' }"
-          >
-            <div class="absolute right-0 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-md opacity-0 group-hover/bar:opacity-100 transition-opacity"></div>
-          </div>
+          ></div>
         </div>
-        <div class="flex justify-between mt-1">
-          <span class="text-[10px] text-white/30 tabular-nums">{{ formatTime(currentElapsed) }}</span>
-          <span class="text-[10px] text-white/30 tabular-nums">{{ formatTime(duration) }}</span>
+        <div class="flex justify-between mt-2 px-1">
+          <span class="text-[10px] font-bold text-white/30 tabular-nums">{{ formatTime(currentElapsed) }}</span>
+          <span class="text-[10px] font-bold text-white/30 tabular-nums">{{ formatTime(duration) }}</span>
         </div>
       </div>
+ 
+      <!-- 主控制器 -->
+      <div class="flex items-center justify-between gap-2 px-2 pb-2 mt-auto">
+        <button class="p-3 text-white/30 hover:text-white transition-all transform active:scale-90" :disabled="!activeQueueId" @click="toggleShuffle">
+          <svg class="w-5 h-5" :class="shuffleOn ? 'text-cyan-400 glow-blue' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        
+        <div class="flex items-center gap-4">
+          <button class="p-3 text-white/40 hover:text-white transition-all active:scale-90" :disabled="!activeQueueId" @click="prevTrack">
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          </button>
+          
+          <button class="w-14 h-14 flex items-center justify-center bg-white text-black rounded-2xl shadow-[0_10px_20px_rgba(255,255,255,0.1)] transition-all hover:scale-105 active:scale-95 disabled:opacity-40" 
+            :disabled="!activeQueueId" @click="togglePlay">
+            <svg v-if="playState === 'playing'" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+            <svg v-else class="w-8 h-8 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+          
+          <button class="p-3 text-white/40 hover:text-white transition-all active:scale-90" :disabled="!activeQueueId" @click="nextTrack">
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </button>
+        </div>
 
-      <div class="flex items-center justify-center gap-4 mt-auto">
-        <button class="p-2 text-white/50 hover:text-white transition-colors" :disabled="!activeQueueId" @click="toggleShuffle">
-          <svg class="w-4 h-4" :class="shuffleOn ? 'text-cyan-400' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-        </button>
-        <button class="p-2 text-white/50 hover:text-white transition-colors" :disabled="!activeQueueId" @click="prevTrack">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-        </button>
-        <button class="w-10 h-10 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white rounded-full transition-all hover:scale-105 disabled:opacity-40 disabled:hover:scale-100" :disabled="!activeQueueId" @click="togglePlay">
-          <svg v-if="playState === 'playing'" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-          </svg>
-          <svg v-else class="w-6 h-6 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"/>
-          </svg>
-        </button>
-        <button class="p-2 text-white/50 hover:text-white transition-colors" :disabled="!activeQueueId" @click="nextTrack">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-        </button>
-        <button class="p-2 text-white/50 hover:text-white transition-colors relative" :disabled="!activeQueueId" @click="cycleRepeat">
-          <svg class="w-4 h-4" :class="repeatMode !== 'off' ? 'text-cyan-400' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-          <span v-if="repeatMode === 'one'" class="absolute -top-0.5 -right-0.5 text-[7px] font-black text-cyan-400">1</span>
+        <button class="p-3 text-white/30 hover:text-white transition-all transform active:scale-90 relative" :disabled="!activeQueueId" @click="cycleRepeat">
+          <svg class="w-5 h-5" :class="repeatMode !== 'off' ? 'text-cyan-400 glow-blue' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+          <span v-if="repeatMode === 'one'" class="absolute top-2 right-2 text-[8px] font-black text-cyan-400">1</span>
         </button>
       </div>
-
-      <div class="flex items-center gap-2 mt-4">
-        <svg class="w-3.5 h-3.5 text-white/30" fill="currentColor" viewBox="0 0 24 24">
+ 
+      <!-- 音量控制 -->
+      <div class="flex items-center gap-4 mt-6 bg-white/5 p-3 rounded-2xl border border-white/5">
+        <svg class="w-4 h-4 text-white/30 shrink-0" fill="currentColor" viewBox="0 0 24 24">
           <path d="M3 9v6h4l5 5V4L7 9H3z"/>
         </svg>
         <div
-          class="volume-track relative flex-1 h-1.5 bg-white/20 rounded-full cursor-pointer group/vol select-none"
+          class="volume-track relative flex-1 h-2 bg-white/10 rounded-full cursor-pointer transition-all"
           @click="onVolumeClick"
           @mousedown.prevent="onVolumeMouseDown"
         >
-          <div class="h-full bg-white/60 rounded-full group-hover/vol:bg-white/75 transition-colors" :style="{ width: displayedVolume + '%' }"></div>
-          <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md opacity-0 group-hover/vol:opacity-100 transition-opacity" :style="{ left: 'calc(' + displayedVolume + '% - 6px)' }"></div>
+          <div class="h-full bg-white/50 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
         </div>
-        <span class="text-[10px] text-white/30 w-7 text-right tabular-nums">{{ displayedVolume }}</span>
+        <span class="text-[10px] font-black text-white/40 w-8 text-right font-heading">{{ displayedVolume }}</span>
       </div>
+    </div>
+  </div>
     </div>
   </div>
 </template>

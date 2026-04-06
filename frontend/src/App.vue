@@ -2,103 +2,115 @@
   <div class="grid-pattern min-h-screen flex flex-col text-white">
 
     <!-- 顶部导航栏 -->
-    <header class="glass-effect border-b border-white/10 px-4 py-2 flex items-center gap-2 shrink-0 z-20">
+    <header class="glass-effect border-b border-white/10 px-6 py-3 flex items-center gap-4 shrink-0 z-30">
       <!-- 返回主页按钮 -->
       <button
-        class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-        :class="currentTab !== 'overview' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30' : 'text-white/30 cursor-default'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+        :class="currentTab !== 'overview' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 ring-1 ring-cyan-500/30' : 'text-white/20 cursor-default'"
         :disabled="currentTab === 'overview'"
         @click="currentTab = 'overview'"
-        title="返回主页"
+        title="首页"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
         </svg>
       </button>
-
-      <div class="w-px h-6 bg-white/10 mx-1"></div>
-
-      <!-- 功能图标按钮 -->
-      <button
-        v-for="tab in mainTabs"
-        :key="tab.id"
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors"
-        :class="currentTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
-        :title="tab.label"
-        @click="currentTab = tab.id"
-      >
-        {{ tab.icon }}
-      </button>
-
+ 
+      <div class="h-6 w-px bg-white/10 mx-1"></div>
+ 
+      <!-- 分段导航 -->
+      <nav class="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
+        <button
+          v-for="tab in mainTabs"
+          :key="tab.id"
+          class="px-4 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-all duration-300 font-heading"
+          :class="currentTab === tab.id ? 'bg-white/15 text-white shadow-lg' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
+          @click="currentTab = tab.id"
+        >
+          <span class="text-base">{{ tab.icon }}</span>
+          <span>{{ tab.label }}</span>
+        </button>
+      </nav>
+ 
       <div class="flex-1"></div>
-
-      <!-- 状态 -->
-      <span class="text-xs status-badge mr-2" :class="statusClass">{{ statusText }}</span>
-
-      <!-- 全屏按钮 -->
-      <button
-        class="w-9 h-9 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
-        title="全屏显示"
-        @click="toggleFullscreen"
-      >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-        </svg>
-      </button>
+ 
+      <!-- 系统状态区 -->
+      <div class="flex items-center gap-4">
+        <div class="flex flex-col items-end mr-2">
+          <span class="text-[10px] uppercase tracking-tighter text-white/30 font-bold leading-none mb-1">System Status</span>
+          <span class="text-xs font-heading font-semibold" :class="statusClass">{{ statusText }}</span>
+        </div>
+        
+        <button
+          class="w-10 h-10 rounded-xl glass-effect flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          @click="toggleFullscreen"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+          </svg>
+        </button>
+      </div>
     </header>
-
+ 
     <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
-      <div class="flex-1 p-4 md:p-6 overflow-hidden">
-        <div class="w-full h-full rounded-2xl glass-effect relative overflow-hidden">
-          <FloorPlanView
-            :ha-entities="haEntities"
-            :entity-mapping="currentSettings.entity_mapping || []"
-            :bg-image="currentSettings.floor_plan_image || ''"
-            :weather-entity-id="currentSettings.weather_entity_id || ''"
-            :ma-state="maState"
-            @entity-toggle="onEntityToggle"
-            @mapping-update="onMappingUpdate"
-            @bg-update="onBgUpdate"
-            @entity-add="onEntityAdd"
-          />
-
+      <div class="flex-1 p-5 md:p-8 overflow-hidden bg-black/20">
+        <div class="w-full h-full rounded-[2rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
+          <transition name="fade" mode="out-in">
+            <component 
+              :is="currentTab === 'overview' ? FloorPlanView : (currentTab === 'settings' ? 'div' : 'div')"
+              key="content"
+              :ha-entities="haEntities"
+              :entity-mapping="currentSettings.entity_mapping || []"
+              :bg-image="currentSettings.floor_plan_image || ''"
+              :weather-entity-id="currentSettings.weather_entity_id || ''"
+              :ma-state="maState"
+              @entity-toggle="onEntityToggle"
+              @mapping-update="onMappingUpdate"
+              @bg-update="onBgUpdate"
+              @entity-add="onEntityAdd"
+              @climate-action="onClimateAction"
+              class="w-full h-full"
+            />
+          </transition>
         </div>
       </div>
-
+ 
       <!-- 右侧边栏 -->
       <aside v-if="showSidebar || currentTab === 'settings'"
-        class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex"
-        :style="currentTab === 'settings' ? 'max-height: calc(100vh - 48px - 40px); overflow-y: auto;' : ''">
-        <template v-if="currentTab === 'settings'">
-          <SettingsView
-            :ha-entities="haEntities"
-            :ha-connected="haConnected"
-            :ma-connected="maConnected"
-            :ma-state="maState"
-            :system-status="systemStatus"
-            :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
-            :weather-entity-id="currentSettings.weather_entity_id || ''"
-            @save="onSettingsSave"
-            @restart="onSettingsRestart"
-            @toggle-sidebar="showSidebar = $event"
-          />
-        </template>
-        <template v-else>
-          <SidebarWidgets
-            :ha-entities="haEntities"
-            :summary="summary"
-            :ma-state="maState"
-            :current-time="currentTime"
-            :current-date="currentDate"
-            :weather-entity-id="currentSettings.weather_entity_id || ''"
-            :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
-            @open="activeDetail = $event"
-            @toggle-light="onEntityToggle"
-            @select-player="onSwitchPlayer"
-          />
-        </template>
+        class="w-[380px] glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_30px_rgba(0,0,0,0.3)]"
+        :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
+        <div class="flex-1 overflow-y-auto">
+          <transition name="fade" mode="out-in">
+            <SettingsView
+              v-if="currentTab === 'settings'"
+              :ha-entities="haEntities"
+              :ha-connected="haConnected"
+              :ma-connected="maConnected"
+              :ma-state="maState"
+              :system-status="systemStatus"
+              :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
+              :weather-entity-id="currentSettings.weather_entity_id || ''"
+              @save="onSettingsSave"
+              @restart="onSettingsRestart"
+              @toggle-sidebar="showSidebar = $event"
+            />
+            <SidebarWidgets
+              v-else
+              :ha-entities="haEntities"
+              :summary="summary"
+              :ma-state="maState"
+              :current-time="currentTime"
+              :current-date="currentDate"
+              :weather-entity-id="currentSettings.weather_entity_id || ''"
+              :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
+              @open="activeDetail = $event"
+              @toggle-light="onEntityToggle"
+              @select-player="onSwitchPlayer"
+            />
+          </transition>
+        </div>
       </aside>
     </main>
 

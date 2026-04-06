@@ -15,74 +15,81 @@
       <div
         v-for="mapping in displayMappings"
         :key="mapping.entity_id"
-        class="entity-icon absolute flex flex-col items-center cursor-pointer select-none"
+        class="entity-item absolute flex flex-col items-center cursor-pointer select-none group"
         :style="iconStyle(mapping)"
         @click.stop="onIconClick(mapping)"
         @mousedown.stop="startDrag(mapping, $event)"
       >
-        <div class="text-2xl leading-none">{{ entityIcon(mapping.type) }}</div>
-        <div v-if="showLabels" class="text-xs mt-0.5 px-1 rounded bg-black/50 truncate max-w-[80px] text-center">
+        <!-- 光晕效果 (仅灯光开启时) -->
+        <div v-if="entityState(mapping.entity_id) === 'on' && mapping.type === '灯'" 
+          class="absolute inset-0 -m-8 rounded-full bg-yellow-400/20 blur-2xl animate-pulse"></div>
+        
+        <!-- 图标容器 -->
+        <div class="relative w-12 h-12 flex items-center justify-center rounded-2xl glass-panel transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
+          :class="entityState(mapping.entity_id) === 'on' ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5'">
+          <component :is="getIconComponent(mapping.type)" 
+            class="w-6 h-6 transition-colors duration-300"
+            :class="entityState(mapping.entity_id) === 'on' ? (mapping.type === '灯' ? 'text-yellow-300 glow-yellow' : 'text-cyan-300 glow-blue') : 'text-white/40'" />
+          
+          <!-- 状态呼吸灯 -->
+          <div v-if="entityState(mapping.entity_id) === 'on'"
+            class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] bg-white animate-pulse">
+          </div>
+        </div>
+
+        <div v-if="showLabels" class="mt-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/5 text-[10px] font-bold tracking-tight text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] shadow-sm">
           {{ mapping.label || shortId(mapping.entity_id) }}
         </div>
-        <!-- 在线状态点 -->
-        <div v-if="entityState(mapping.entity_id) === 'on'"
-          class="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-400 shadow-lg shadow-yellow-400/50">
-        </div>
       </div>
-
+ 
       <!-- 拖拽预览 -->
       <div
         v-if="dragging"
-        class="entity-icon absolute flex flex-col items-center pointer-events-none opacity-70"
+        class="entity-item absolute flex flex-col items-center pointer-events-none opacity-50"
         :style="previewStyle"
       >
-        <div class="text-2xl leading-none">{{ entityIcon(dragMapping?.type) }}</div>
+        <div class="w-12 h-12 flex items-center justify-center rounded-2xl glass-panel border-dashed border-cyan-400/50">
+          <component :is="getIconComponent(dragMapping?.type)" class="w-6 h-6 text-cyan-400" />
+        </div>
       </div>
     </div>
-
+ 
     <!-- 右上角控制栏 -->
-    <div class="absolute top-3 right-3 flex flex-col gap-2">
+    <div class="absolute top-4 right-4 flex flex-col gap-2.5">
       <!-- 编辑模式 -->
       <button
-        class="glass-effect rounded-lg px-3 py-1.5 text-xs"
-        :class="editMode ? 'text-cyan-400 border border-cyan-500/40' : 'text-white/50 border border-white/10'"
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide transition-all active:scale-95"
+        :class="editMode ? 'text-cyan-300 border-cyan-500/50 bg-cyan-500/10' : 'text-white/40 border-white/10 hover:bg-white/5'"
         @click="editMode = !editMode"
       >
-        {{ editMode ? '✅ 编辑中' : '✏️ 编辑位置' }}
+        {{ editMode ? 'DONE' : 'EDIT PLAN' }}
       </button>
-
+ 
       <!-- 上传背景图 -->
       <label v-if="editMode"
-        class="glass-effect rounded-lg px-3 py-1.5 text-xs text-white/70 border border-white/10 cursor-pointer hover:bg-white/5">
-        🖼️ 上传底图
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-white/60 border-white/10 cursor-pointer hover:bg-white/10 transition-all">
+        UPLOAD MAP
         <input type="file" accept="image/*" class="hidden" @change="onImageUpload" />
       </label>
-
+ 
       <!-- 保存位置 -->
       <button v-if="editMode && hasChanges"
-        class="glass-effect rounded-lg px-3 py-1.5 text-xs text-emerald-400 border border-emerald-500/40"
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-emerald-400 border-emerald-500/50 bg-emerald-500/10 animate-bounce"
         @click="savePositions">
-        💾 保存
-      </button>
-
-      <!-- 清除底图 -->
-      <button v-if="editMode && bgImage"
-        class="glass-effect rounded-lg px-3 py-1.5 text-xs text-red-400 border border-red-500/20"
-        @click="bgImage = ''; bgImageData = ''; hasChanges = true">
-        🗑️ 清除底图
+        SAVE CHANGES
       </button>
     </div>
-
+ 
     <!-- 左上角：图层/模式切换 -->
-    <div class="absolute top-3 left-3 flex gap-2 flex-wrap max-w-[60%]">
+    <div class="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[70%]">
       <button
         v-for="layer in layers"
         :key="layer"
-        class="glass-effect rounded-lg px-2 py-1 text-xs"
-        :class="activeLayer === layer ? 'text-cyan-300 border border-cyan-500/40' : 'text-white/40 border border-white/10'"
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wider transition-all"
+        :class="activeLayer === layer ? 'text-white border-white/30 bg-white/10 shadow-lg' : 'text-white/30 border-white/5 hover:bg-white/5 hover:text-white/60'"
         @click="activeLayer = layer"
       >
-        {{ layer }}
+        {{ layer.toUpperCase() }}
       </button>
     </div>
 
@@ -130,17 +137,32 @@ const localMappings = ref([])
 const localBgImage = ref('')
 const hasChanges = ref(false)
 
-// Layers definition
 const layers = ['全部', '客厅', '卧室', '厨房', '卫生间', '阳台']
 const activeLayer = ref('全部')
-
 const displayMappings = computed(() => {
   if (activeLayer.value === '全部') return localMappings.value
   return localMappings.value.filter(m => m.layer === activeLayer.value)
 })
 
-const entityIcon = (type) => {
-  return { '灯': '💡', '空调': '❄️', '开关': '🔌', '传感器': '🌡️', '其他': '📦' }[type] || '📦'
+// 现代图标组件 (内联 SVG)
+const IconLight = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`
+}
+const IconClimate = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></svg>`
+}
+const IconSwitch = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>`
+}
+const IconSensor = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`
+}
+const IconOther = {
+  template: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>`
+}
+
+const getIconComponent = (type) => {
+  return { '灯': IconLight, '空调': IconClimate, '开关': IconSwitch, '传感器': IconSensor }[type] || IconOther
 }
 
 const entityState = (entity_id) => {
@@ -150,7 +172,7 @@ const entityState = (entity_id) => {
 
 const shortId = (id) => {
   const parts = id.split('.')
-  return parts.length >= 2 ? parts[1].slice(0, 8) : id
+  return parts.length >= 2 ? parts[1].toUpperCase() : id
 }
 
 const bgStyle = computed(() => {

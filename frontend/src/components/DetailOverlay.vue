@@ -1,14 +1,18 @@
-<template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-4" @click.self="$emit('close')">
-    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="$emit('close')"></div>
-
-    <div class="relative glass-effect rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
-
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-12" @click.self="$emit('close')">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-all duration-500" @click="$emit('close')"></div>
+ 
+    <div class="relative glass-panel rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in">
+ 
       <!-- 标题栏 -->
-      <div class="flex items-center justify-between px-5 py-3 border-b border-white/10 shrink-0">
-        <div class="flex items-center gap-2 text-base font-semibold">{{ title }}</div>
-        <button class="w-8 h-8 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
-          @click="$emit('close')">✕</button>
+      <div class="flex items-center justify-between px-8 py-5 border-b border-white/5 shrink-0 bg-white/5">
+        <div class="flex items-center gap-3 text-xl font-extrabold font-heading tracking-tight text-white/90">
+          <span class="opacity-80">{{ titleIcon }}</span>
+          <span>{{ titleText }}</span>
+        </div>
+        <button class="w-10 h-10 rounded-2xl flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all active:scale-90 bg-white/5 border border-white/5"
+          @click="$emit('close')">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
 
       <!-- 内容区 -->
@@ -190,14 +194,15 @@ const props = defineProps({
 const emit = defineEmits(['close', 'toggle-light', 'climate-action'])
 
 const titleMap = {
-  lights: '💡 灯光控制',
-  climate: '❄️ 空调控制',
-  weather: '🌤️ 天气详情',
-  battery: '🔋 低电量设备',
-  offline: '📡 离线设备',
-  music: '🎵 音乐播放',
+  lights: { icon: '💡', text: 'LIGHTING' },
+  climate: { icon: '❄️', text: 'CLIMATE' },
+  weather: { icon: '🌤️', text: 'WEATHER' },
+  battery: { icon: '🔋', text: 'BATTERY' },
+  offline: { icon: '📡', text: 'OFFLINE' },
+  music: { icon: '🎵', text: 'MUSIC' },
 }
-const title = computed(() => titleMap[props.type] || '')
+const titleIcon = computed(() => titleMap[props.type]?.icon || '')
+const titleText = computed(() => titleMap[props.type]?.text || '')
 
 const allLights = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('light.')))
 const allClimates = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('climate.')))
