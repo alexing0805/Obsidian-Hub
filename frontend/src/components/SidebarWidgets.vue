@@ -114,7 +114,7 @@
       <div v-if="widgets.music" class="rounded-xl p-3 border border-purple-500/10">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-white/40">🎵 音乐</span>
-          <MusicPlayerSelector :ma-state="maState" class="text-xs" />
+          <MusicPlayerSelector :ma-state="maState" class="text-xs" @select-player="$emit('select-player', $event)" />
         </div>
         <MusicAssistantPlayer :ma-state="maState" />
       </div>
@@ -138,7 +138,7 @@ const props = defineProps({
   sidebarWidgets: { type: Object, default: () => ({}) },
 })
 
-defineEmits(['open', 'toggle-light'])
+defineEmits(['open', 'toggle-light', 'select-player'])
 
 const widgets = computed(() => ({
   weather: props.sidebarWidgets.weather !== false,

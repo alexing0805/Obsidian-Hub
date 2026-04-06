@@ -560,6 +560,10 @@ async def refresh_ha_state_once() -> bool:
     return changed
 
 
+manual_active_player_id: Optional[str] = None
+manual_active_queue_id: Optional[str] = None
+
+
 async def refresh_ma_state_once() -> bool:
     global ma_state, ma_signature
 
@@ -576,6 +580,11 @@ async def refresh_ma_state_once() -> bool:
         }
     else:
         next_state = await ma_client.refresh_state()
+        # Override with manual selection if exists
+        if manual_active_player_id:
+            next_state["active_player_id"] = manual_active_player_id
+        if manual_active_queue_id:
+            next_state["active_queue_id"] = manual_active_queue_id
 
     next_signature = build_ma_signature(next_state)
     changed = next_signature != ma_signature
@@ -724,6 +733,28 @@ async def send_ma_cmd(cmd: MACmd):
         print(f"[MA] Refresh after command failed: {exc}")
 
     return {"success": True, "result": result}
+
+
+@app.post("/api/ma/switch_player")
+async def switch_ma_player(payload: dict[str, Any]):
+    global manual_active_player_id, manual_active_queue_id
+    player_id = payload.get("player_id")
+    if not player_id:
+        raise HTTPException(status_code=400, detail="player_id is required")
+
+    manual_active_player_id = player_id
+    # Try to find corresponding queue if possible
+    mapping = ma_state.get("queue_player_map", {})
+    reverse_map = {v: k for k, v in mapping.items()}
+    manual_active_queue_id = reverse_map.get(player_id)
+
+    async with ma_lock:
+        ma_state["active_player_id"] = manual_active_player_id
+        if manual_active_queue_id:
+            ma_state["active_queue_id"] = manual_active_queue_id
+
+    await broadcast({"type": "ma_state", "state": ma_state})
+    return {"success": True, "active_player_id": player_id}
 
 
 @app.get("/api/config")

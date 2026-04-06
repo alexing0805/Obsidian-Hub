@@ -95,7 +95,8 @@
             :weather-entity-id="currentSettings.weather_entity_id || ''"
             :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
             @open="activeDetail = $event"
-            @toggle-light="onToggleLight"
+            @toggle-light="onEntityToggle"
+            @select-player="onSwitchPlayer"
           />
         </template>
       </aside>
@@ -293,13 +294,12 @@ const onEntityToggle = (arg) => {
   const entity_id = typeof arg === 'string' ? arg : (arg?.entity_id || arg?.entity?.entity_id)
   const entity = typeof arg === 'object' && arg?.entity ? arg.entity : haEntities.value.find(e => e.entity_id === entity_id)
   if (!entity) return
+
   if (entity.entity_id.startsWith('light.')) {
-    toggleLight(entity) else if (type === '空调') {
-    const entity = haEntities.value.find(e => e.entity_id === entity_id)
-    if (entity) {
-      const newMode = entity.state === 'off' ? 'heat' : 'off'
-      onClimateAction({ entity, action: 'mode', value: newMode })
-    }
+    toggleLight(entity)
+  } else if (entity.entity_id.startsWith('climate.')) {
+    const newMode = entity.state === 'off' ? 'heat' : 'off'
+    onClimateAction({ entity, action: 'mode', value: newMode })
   } else if (entity.entity_id.startsWith('switch.')) {
     const newState = entity.state === 'on' ? 'turn_off' : 'turn_on'
     fetch('/api/ha/service', {
@@ -333,10 +333,6 @@ const onSwitchPlayer = async (player) => {
   }
 }
 
-const onToggleLight = (entity_id) => {
-  const entity = haEntities.value.find(e => e.entity_id === entity_id)
-  if (entity) toggleLight(entity)
-}
 
 const onEntityAdd = (entity) => {
   const mapping = {
