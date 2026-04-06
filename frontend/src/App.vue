@@ -84,7 +84,7 @@
         </div>
       </div>
 
-      <aside class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex">
+      <aside v-if="showSidebar && currentTab !== 'settings'" class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex">
         <div class="p-4 border-b border-white/10">
           <div class="text-center mb-4">
             <div class="text-3xl font-light tracking-wider">{{ currentTime }}</div>
@@ -147,7 +147,19 @@
           </div>
         </div>
 
-        <MusicAssistantPlayer :ma-state="maState" />
+        <MusicAssistantPlayer v-if="currentTab !== 'settings'" :ma-state="maState" />
+
+      <SettingsView
+        v-if="currentTab === 'settings'"
+        :ha-entities="haEntities"
+        :ha-connected="haConnected"
+        :ma-connected="maConnected"
+        :ma-state="maState"
+        :system-status="systemStatus"
+        @save="onSettingsSave"
+        @restart="onSettingsRestart"
+        @toggle-sidebar="showSidebar = $event"
+      />
       </aside>
     </main>
 
@@ -168,6 +180,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
+import SettingsView from './components/SettingsView.vue'
 
 const tabs = [
   { id: 'overview', label: '总览' },
@@ -177,6 +190,8 @@ const tabs = [
 ]
 
 const currentTab = ref('overview')
+const showSidebar = ref(true)
+const systemStatus = ref({ ws_clients: 0 })
 const currentTime = ref('')
 const currentDate = ref('')
 const haEntities = ref([])
@@ -232,6 +247,18 @@ const statusText = computed(() => {
   if (maConnected.value) return 'HA OFFLINE / MA ONLINE'
   return 'DISCONNECTED'
 })
+
+const onSettingsSave = (settings) => {
+  console.log('Settings saved:', settings)
+}
+
+const onSettingsRestart = async () => {
+  try {
+    await fetch('/api/restart', { method: 'POST' })
+  } catch (e) {
+    console.error('Restart failed', e)
+  }
+}
 
 const statusClass = computed(() => {
   if (haConnected.value && maConnected.value) return 'text-emerald-400'

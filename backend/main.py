@@ -710,6 +710,58 @@ async def send_ma_cmd(cmd: MACmd):
     return {"success": True, "result": result}
 
 
+@app.get("/api/settings")
+async def get_settings():
+    """Return current frontend-accessible settings (read-only view)."""
+    return {
+        "success": True,
+        "settings": {
+            "ha_refresh_interval": current_settings.get("ha_refresh_interval", 15),
+            "ma_refresh_interval": current_settings.get("ma_refresh_interval", 5),
+            "temperature_entity": current_settings.get("temperature_entity", ""),
+            "humidity_entity": current_settings.get("humidity_entity", ""),
+            "light_mapping": current_settings.get("light_mapping", DEFAULT_SETTINGS["light_mapping"]),
+            "light_positions": current_settings.get("light_positions", DEFAULT_SETTINGS["light_positions"]),
+            "show_sidebar": current_settings.get("show_sidebar", True),
+            "clock_24h": current_settings.get("clock_24h", True),
+        }
+    }
+
+
+@app.put("/api/settings")
+async def update_settings(new_settings: dict[str, Any]):
+    """Update settings and persist to disk."""
+    allowed = {
+        "ha_refresh_interval", "ma_refresh_interval",
+        "temperature_entity", "humidity_entity",
+        "light_mapping", "light_positions",
+        "show_sidebar", "clock_24h",
+    }
+    filtered = {k: v for k, v in new_settings.items() if k in allowed}
+    current_settings.update(filtered)
+    save_settings(current_settings)
+    return {"success": True, "settings": dict(current_settings)}
+
+
+@app.post("/api/restart")
+async def restart_service():
+    """Signal service restart (reload HA/MA connections)."""
+    asyncio.create_task(_reload_connections())
+    return {"success": True, "message": "Restart signalled"}
+
+
+async def _reload_connections():
+    """Reload HA/MA state with current settings."""
+    try:
+        await refresh_ha_state_once()
+    except Exception as exc:
+        print(f"[Reload] HA refresh failed: {exc}")
+    try:
+        await refresh_ma_state_once()
+    except Exception as exc:
+        print(f"[Reload] MA refresh failed: {exc}")
+
+
 @app.websocket("/api/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
@@ -733,6 +785,41 @@ async def websocket_endpoint(websocket: WebSocket):
         active_connections.discard(websocket)
 
 
+# ── Settings persistence ────────────────────────────────────────────────────────
+SETTINGS_FILE = Path(__file__).parent / "settings.json"
+
+DEFAULT_SETTINGS = {
+    "ha_refresh_interval": 15,
+    "ma_refresh_interval": 5,
+    "temperature_entity": "",
+    "humidity_entity": "",
+    "light_mapping": ["", "", "", "", "", "", "", ""],
+    "light_positions": [[140, 130], [240, 170], [560, 130], [660, 170],
+                        [120, 350], [280, 430], [430, 390], [620, 350]],
+    "show_sidebar": True,
+    "clock_24h": True,
+}
+
+def load_settings() -> dict[str, Any]:
+    try:
+        if SETTINGS_FILE.exists():
+            with open(SETTINGS_FILE) as f:
+                saved = json.load(f)
+                return {**DEFAULT_SETTINGS, **saved}
+    except Exception:
+        pass
+    return dict(DEFAULT_SETTINGS)
+
+def save_settings(settings: dict[str, Any]) -> None:
+    try:
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f, indent=2)
+    except Exception as exc:
+        print(f"[Settings] Save failed: {exc}")
+
+current_settings = load_settings()
+
+# ── Frontend static ────────────────────────────────────────────────────────────
 frontend_path = Path(__file__).parent.parent / "frontend" / "dist"
 
 if frontend_path.exists():
