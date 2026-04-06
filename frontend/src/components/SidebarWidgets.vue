@@ -9,26 +9,36 @@
       </div>
     </div>
 
-    <!-- 2. 精简气象卡片 -->
-    <div v-if="widgets.weather" 
+    <!-- 2. 气象卡片（含当前 + 3天预报） -->
+    <div v-if="widgets.weather"
       class="glass-panel rounded-[2rem] p-4 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
       @click="$emit('open', { type: 'weather', entityId: weatherEntity?.entity_id })"
     >
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
+      <!-- 第一行：当前天气 -->
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-3">
           <span class="text-4xl drop-shadow-lg group-hover:scale-105 transition-transform duration-500">{{ weatherEmoji }}</span>
           <div class="flex flex-col">
             <span class="text-3xl font-heading font-black leading-none text-white tracking-tighter">{{ weatherTemperature }}</span>
-            <span class="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest mt-1">{{ weatherText }}</span>
+            <span class="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest">{{ weatherText }}</span>
           </div>
         </div>
-        
         <div class="flex flex-col items-end gap-1">
           <div class="px-3 py-1 rounded-xl bg-white/5 border border-white/10 flex gap-2 text-[10px] font-black tabular-nums shadow-inner">
              <span class="text-red-400">H: {{ weatherHigh }}°</span>
              <span class="text-blue-400">L: {{ weatherLow }}°</span>
           </div>
           <div v-if="weatherHumidity !== '--'" class="text-[9px] font-black text-white/10 uppercase tracking-tighter">Humi: {{ weatherHumidity }}</div>
+        </div>
+      </div>
+      <!-- 第二行：3天预报横条 -->
+      <div v-if="weatherForecast.length" class="flex gap-2">
+        <div v-for="(fc, idx) in weatherForecast" :key="idx"
+          class="flex-1 flex flex-col items-center gap-1 py-2 rounded-xl bg-white/5 border border-white/5"
+        >
+          <span class="text-[9px] font-black text-white/30 uppercase">{{ fc.weekday }}</span>
+          <span class="text-lg leading-none">{{ getFcEmoji(fc.condition) }}</span>
+          <span class="text-[10px] font-black text-white/60">{{ fc.temp }}°</span>
         </div>
       </div>
     </div>
@@ -49,7 +59,8 @@
     </div>
   
     <!-- 4. 音乐播放器 (垂直 100% 占满) -->
-    <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0">
+    <!-- 4. 音乐播放器（固定高度，避免挤压） -->
+    <div v-if="widgets.music" class="shrink-0" style="height: 340px;">
       <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
     </div>
 

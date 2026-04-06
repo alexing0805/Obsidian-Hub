@@ -33,7 +33,7 @@
             <div v-if="!(maState.players || []).length" class="px-4 py-3 text-[11px] text-white/30 italic">No players available</div>
           </div>
         </div>
-        <span class="text-[9px] text-white/20 font-black uppercase tracking-[0.2em] truncate max-w-[80px] bg-white/5 px-2 py-0.5 rounded-md border border-white/5">{{ queueLabel }}</span>
+        <span class="text-[9px] text-white/20 font-black uppercase tracking-[0.1em] truncate max-w-[55px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">{{ queueLabel }}</span>
       </div>
  
       <!-- 2. 中间：曲目信息 (占据核心高度) -->
@@ -206,7 +206,7 @@ const applyMAState = (state) => {
 
   activeQueueId.value = queueId
   activePlayerId.value = player?.player_id || null
-  queueLabel.value = queue?.display_name || player?.name || 'Music Assistant'
+  queueLabel.value = (queue?.display_name || player?.name || 'Music Assistant').slice(0, 18)
 
   playState.value = queue?.state || player?.playback_state || 'idle'
   shuffleOn.value = !!queue?.shuffle_enabled
