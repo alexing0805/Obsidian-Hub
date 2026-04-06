@@ -1,43 +1,55 @@
-﻿<template>
-  <div class="grid-pattern min-h-screen flex text-white">
-    <nav class="w-64 glass-effect flex-col z-20 hidden md:flex">
-      <div class="p-4 border-b border-white/10">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-            </svg>
-          </div>
-          <div>
-            <h1 class="font-bold text-sm">Obsidian Hub</h1>
-            <span class="text-xs status-badge" :class="statusClass">{{ statusText }}</span>
-          </div>
-        </div>
-      </div>
+<template>
+  <div class="grid-pattern min-h-screen flex flex-col text-white">
 
-      <div class="flex-1 py-4 px-3 space-y-1">
-        <button
-          v-for="tab in tabs"
-          :key="tab.id"
-          class="nav-item w-full text-left px-4 py-3 rounded-lg border border-transparent text-sm font-medium flex items-center gap-3"
-          :class="{ 'active': currentTab === tab.id, 'text-white/60': currentTab !== tab.id }"
-          @click="currentTab = tab.id"
-        >
-          <span>{{ tab.label }}</span>
-        </button>
-      </div>
+    <!-- 顶部导航栏 -->
+    <header class="glass-effect border-b border-white/10 px-4 py-2 flex items-center gap-2 shrink-0 z-20">
+      <!-- 返回主页按钮 -->
+      <button
+        class="w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
+        :class="currentTab !== 'overview' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30' : 'text-white/30 cursor-default'"
+        :disabled="currentTab === 'overview'"
+        @click="currentTab = 'overview'"
+        title="返回主页"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+      </button>
 
-      <div class="p-4 border-t border-white/10">
-        <button
-          class="w-full px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
-          @click="toggleFullscreen"
-        >
-          全屏显示
-        </button>
-      </div>
-    </nav>
+      <div class="w-px h-6 bg-white/10 mx-1"></div>
 
-    <main class="flex-1 flex overflow-hidden pb-14 md:pb-10">
+      <!-- 功能图标按钮 -->
+      <button
+        v-for="tab in mainTabs"
+        :key="tab.id"
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-lg transition-colors"
+        :class="currentTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
+        :title="tab.label"
+        @click="currentTab = tab.id"
+      >
+        {{ tab.icon }}
+      </button>
+
+      <div class="flex-1"></div>
+
+      <!-- 状态 -->
+      <span class="text-xs status-badge mr-2" :class="statusClass">{{ statusText }}</span>
+
+      <!-- 全屏按钮 -->
+      <button
+        class="w-9 h-9 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+        title="全屏显示"
+        @click="toggleFullscreen"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- 主体区域 -->
+    <main class="flex-1 flex overflow-hidden">
+      <!-- 左侧主内容区 -->
       <div class="flex-1 p-4 md:p-6 overflow-hidden">
         <div class="w-full h-full rounded-2xl glass-effect relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950">
@@ -84,6 +96,7 @@
         </div>
       </div>
 
+      <!-- 右侧边栏 -->
       <aside v-if="showSidebar || currentTab === 'settings'" class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex overflow-y-auto">
         <template v-if="currentTab === 'settings'">
           <SettingsView
@@ -165,6 +178,7 @@
       </aside>
     </main>
 
+    <!-- 底部状态栏 -->
     <div class="fixed bottom-0 left-0 right-0 glass-effect border-t border-white/10 py-2 px-4 md:px-6">
       <div class="flex items-center justify-between text-xs text-white/40 gap-4">
         <div class="flex items-center gap-4 md:gap-10 overflow-x-auto">
@@ -184,11 +198,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
 import SettingsView from './components/SettingsView.vue'
 
-const tabs = [
-  { id: 'overview', label: '总览' },
-  { id: 'security', label: '安防' },
-  { id: 'media', label: '影音' },
-  { id: 'settings', label: '系统设置' }
+const mainTabs = [
+  { id: 'overview', label: '总览', icon: '🏠' },
+  { id: 'security', label: '安防', icon: '🔒' },
+  { id: 'media', label: '影音', icon: '🎬' },
+  { id: 'settings', label: '系统设置', icon: '⚙️' }
 ]
 
 const currentTab = ref('overview')
