@@ -116,14 +116,16 @@
 
     <!-- 详情弹窗 -->
     <DetailOverlay
-      v-if="activeDetail"
-      :type="activeDetail"
+      v-if="activeDetail.type"
+      :type="activeDetail.type"
+      :entity-id="activeDetail.entityId"
       :ha-entities="filteredEntities"
       :ma-state="maState"
       :weather-entity-id="currentSettings.weather_entity_id || ''"
-      @close="activeDetail = null"
-      @toggle-light="toggleLight"
+      @close="activeDetail = { type: null, entityId: null }"
+      @toggle-light="onEntityToggle"
       @climate-action="onClimateAction"
+      @cover-action="onCoverAction"
     />
 
     <!-- 底部状态栏 -->
@@ -172,7 +174,7 @@ const defaultSidebarWidgets = {
   weather: true, stats: true, lights: true, climate: true,
   battery: true, offline: true, music: true
 }
-const activeDetail = ref(null)
+const activeDetail = ref({ type: null, entityId: null })
 const summary = ref({
   lights_total: 0,
   lights_on: 0,
@@ -299,6 +301,18 @@ const onClimateAction = async ({ entity, action, value }) => {
     })
   } catch (e) {
     console.error('Climate action failed:', e)
+  }
+}
+
+const onCoverAction = async ({ entity, action }) => {
+  try {
+    await fetch('/api/ha/service', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: 'cover', service: action, entity_id: entity.entity_id })
+    })
+  } catch (e) {
+    console.error('Cover action failed:', e)
   }
 }
 

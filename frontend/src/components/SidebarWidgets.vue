@@ -12,7 +12,7 @@
     <!-- 2. 精简气象卡片 -->
     <div v-if="widgets.weather" 
       class="glass-panel rounded-[2rem] p-4 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
-      @click="$emit('open', 'weather')"
+      @click="$emit('open', { type: 'weather', entityId: weatherEntity?.entity_id })"
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
@@ -38,7 +38,7 @@
       <template v-for="btn in activeStatusButtons" :key="btn.id">
         <div 
           class="glass-panel flex-1 flex flex-col items-center justify-center py-4 rounded-[2rem] card-hover cursor-pointer border-white/5 ring-1 ring-white/5 relative group transition-all min-w-0 shadow-md"
-          @click="$emit('open', btn.id)"
+          @click="$emit('open', { type: btn.id, entityId: null })"
         >
           <div class="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-500">{{ btn.icon }}</div>
           <div class="text-[12px] font-black leading-none mb-0.5" :class="btn.valueClass">{{ btn.value }}</div>

@@ -293,8 +293,13 @@ const previewStyle = computed(() => ({
 
 const onIconClick = (mapping) => {
   if (editMode.value) return
-  if (['空调', '传感器'].includes(mapping.type)) {
-    emit('open', mapping.type === '空调' ? 'climate' : 'sensor')
+  const complexTypes = {
+    '空调': 'climate',
+    '传感器': 'sensor',
+    '窗帘': 'cover'
+  }
+  if (complexTypes[mapping.type]) {
+    emit('open', { type: complexTypes[mapping.type], entityId: mapping.entity_id })
   } else {
     // Toggle directly
     const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
