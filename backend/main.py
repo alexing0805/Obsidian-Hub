@@ -203,7 +203,10 @@ def build_ha_summary(entities: list[dict[str, Any]]) -> dict[str, Any]:
     humidity_entity = choose_by_device_class(
         entities, "humidity", preferred_min=10, preferred_max=95
     )
-    weather_entity = weather_entities[0] if weather_entities else None
+    # 优化：优先选择带有 forecast 属性的天气实体
+    weather_entity = next((w for w in weather_entities if w.get("attributes", {}).get("forecast")), None)
+    if not weather_entity and weather_entities:
+        weather_entity = weather_entities[0]
 
     summary = {
         "lights_total": len(lights),
