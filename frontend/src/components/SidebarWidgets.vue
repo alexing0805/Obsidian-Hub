@@ -1,70 +1,71 @@
 <template>
   <div class="flex flex-col h-full overflow-hidden p-6 space-y-6">
   
-    <!-- 1. 独立时钟卡片 -->
-    <div class="glass-panel rounded-[2rem] p-6 relative overflow-hidden shrink-0 shadow-lg border border-white/5">
+    <!-- 1. 独立时钟卡片 (极简高级) -->
+    <div class="glass-panel rounded-[2rem] p-6 relative overflow-hidden shrink-0 shadow-2xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
       <div class="flex flex-col items-center">
-        <div class="text-5xl font-black tracking-tighter font-heading tabular-nums leading-none mb-2 text-white drop-shadow-xl">{{ currentTime }}</div>
-        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">{{ currentDate }}</div>
+        <div class="text-6xl font-black tracking-tighter font-heading tabular-nums leading-none mb-3 text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">{{ currentTime }}</div>
+        <div class="text-[11px] font-black uppercase tracking-[0.4em] text-white/30">{{ currentDate }}</div>
       </div>
     </div>
 
-    <!-- 2. 独立气象卡片 -->
-    <div v-if="widgets.weather" class="glass-panel rounded-[2.5rem] p-6 relative overflow-hidden group shrink-0 border border-white/5">
+    <!-- 2. 独立气象卡片 (和风天气适配) -->
+    <div v-if="widgets.weather" class="glass-panel rounded-[2.5rem] p-6 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-xl">
       <!-- 动态氛围背景 -->
       <div v-if="maConnected && playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse"></div>
       
       <div class="flex items-center justify-between mb-6 px-1">
-        <div class="flex items-center gap-4">
-          <span class="text-5xl drop-shadow-2xl filter brightness-110">{{ weatherEmoji }}</span>
+        <div class="flex items-center gap-5">
+          <span class="text-6xl drop-shadow-2xl filter brightness-110 group-hover:scale-110 transition-transform duration-500">{{ weatherEmoji }}</span>
           <div class="flex flex-col">
-            <span class="text-3xl font-heading font-black leading-none text-white">{{ weatherTemperature }}</span>
-            <span class="text-[10px] font-black text-cyan-400/80 uppercase tracking-widest mt-1">{{ weatherText }}</span>
+            <span class="text-4xl font-heading font-black leading-none text-white tracking-tighter">{{ weatherTemperature }}</span>
+            <span class="text-[11px] font-black text-cyan-400/70 uppercase tracking-[0.2em] mt-2">{{ weatherText }}</span>
           </div>
         </div>
         
-        <div class="flex flex-col items-end gap-1">
-          <div class="px-3 py-1 rounded-full bg-white/5 border border-white/10 flex gap-2 text-[10px] font-black tabular-nums">
-             <span class="text-red-400">H: {{ weatherHigh }}°</span>
-             <span class="text-blue-400">L: {{ weatherLow }}°</span>
+        <div class="flex flex-col items-end gap-2">
+          <div class="px-4 py-1.5 rounded-2xl bg-white/5 border border-white/10 flex gap-3 text-[11px] font-black tabular-nums shadow-inner">
+             <span class="text-red-400 flex items-center gap-1"><span class="text-[8px] opacity-40">H</span>{{ weatherHigh }}°</span>
+             <span class="text-blue-400 flex items-center gap-1"><span class="text-[8px] opacity-40">L</span>{{ weatherLow }}°</span>
           </div>
-          <div v-if="weatherHumidity !== '--'" class="text-[9px] font-black text-white/20 uppercase">Humidity: {{ weatherHumidity }}</div>
+          <div v-if="weatherHumidity !== '--'" class="text-[10px] font-black text-white/20 uppercase tracking-widest flex items-center gap-1.5">
+             <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21c-4.418 0-8-3.582-8-8 0-4.418 8-11 8-11s8 6.582 8 11c0 4.418-3.582 8-8 8z"/></svg>
+             {{ weatherHumidity }}
+          </div>
         </div>
       </div>
 
       <!-- 未来三日迷你预报 -->
-      <div v-if="weatherForecast.length" class="grid grid-cols-3 gap-2 pt-5 border-t border-white/5">
-        <div v-for="(fc, idx) in weatherForecast" :key="idx" class="flex flex-col items-center py-2 rounded-2xl hover:bg-white/5 transition-colors">
-          <span class="text-[9px] font-black text-white/30 uppercase mb-2">{{ fc.weekday }}</span>
-          <span class="text-2xl mb-1 filter drop-shadow-sm">{{ getFcEmoji(fc.condition) }}</span>
-          <span class="text-[11px] font-extrabold text-white/60">{{ fc.temp }}°</span>
+      <div v-if="weatherForecast.length" class="grid grid-cols-3 gap-3 pt-6 border-t border-white/10">
+        <div v-for="(fc, idx) in weatherForecast" :key="idx" class="flex flex-col items-center py-3 rounded-2xl bg-white/[0.02] border border-transparent hover:border-white/10 hover:bg-white/5 transition-all duration-300">
+          <span class="text-[10px] font-black text-white/20 uppercase mb-3 tracking-wider">{{ fc.weekday }}</span>
+          <span class="text-3xl mb-2 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
+          <span class="text-[12px] font-extrabold text-white/50">{{ fc.temp }}°</span>
         </div>
       </div>
-      <div v-else class="text-center py-2 text-[10px] text-white/10 uppercase font-black italic tracking-widest">No Forecast Data</div>
+      <div v-else class="text-center py-4 text-[10px] text-white/10 uppercase font-black italic tracking-[0.2em]">Syncing Forecast...</div>
     </div>
   
-    <!-- 3. 自适应功能按键 (根据数量自动拉伸填满) -->
+    <!-- 3. 自适应功能按键 (拉伸填满) -->
     <div class="flex flex-row gap-3 shrink-0">
       <template v-for="btn in activeStatusButtons" :key="btn.id">
         <div 
-          class="glass-panel flex-1 flex flex-col items-center justify-center py-4 rounded-[2rem] card-hover cursor-pointer border-white/5 relative group transition-all min-w-0"
+          class="glass-panel flex-1 flex flex-col items-center justify-center py-5 rounded-[2.5rem] card-hover cursor-pointer border-white/5 ring-1 ring-white/5 relative group transition-all min-w-0 shadow-lg"
           @click="$emit('open', btn.id)"
         >
-          <div class="text-2xl mb-2 group-hover:scale-110 transition-transform">{{ btn.icon }}</div>
-          <div class="text-[14px] font-black leading-none mb-1 shadow-sm" :class="btn.valueClass">{{ btn.value }}</div>
-          <div class="text-[8px] font-black uppercase tracking-[0.1em] text-white/30">{{ btn.label }}</div>
+          <div class="text-3xl mb-2.5 group-hover:scale-110 transition-transform duration-500">{{ btn.icon }}</div>
+          <div class="text-[15px] font-black leading-none mb-1 shadow-sm" :class="btn.valueClass">{{ btn.value }}</div>
+          <div class="text-[9px] font-black uppercase tracking-[0.15em] text-white/20">{{ btn.label }}</div>
           
           <!-- 活跃指示器 -->
-          <div v-if="btn.active" class="absolute top-2 right-4 w-1.5 h-1.5 rounded-full animate-pulse shadow-lg" :class="btn.indicatorClass"></div>
+          <div v-if="btn.active" class="absolute top-3 right-5 w-2 h-2 rounded-full animate-pulse shadow-[0_0_10px_currentColor]" :class="btn.indicatorClass"></div>
         </div>
       </template>
     </div>
   
-    <!-- 4. 音乐播放器 (增加间距与呼吸感) -->
-    <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0 pt-2">
-      <div class="flex-1 min-h-0 bg-white/5 rounded-[3rem] border border-white/5 overflow-hidden flex flex-col shadow-inner">
-        <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
-      </div>
+    <!-- 4. 音乐播放器 (垂直 100% 占满) -->
+    <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0">
+      <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
     </div>
 
   </div>
@@ -99,27 +100,34 @@ const widgets = computed(() => ({
 const maConnected = computed(() => props.maState?.connected || false)
 const playState = computed(() => props.maState?.active_player?.state || 'off')
  
-const weatherEntity = computed(() =>
-  props.haEntities.find(e => e.entity_id === props.weatherEntityId) ||
-  props.haEntities.find(e => e.entity_id.startsWith('weather.') && e.attributes?.forecast) ||
-  props.haEntities.find(e => e.entity_id.startsWith('weather.')) || null
-)
-const weatherText = computed(() => weatherEntity.value?.state || '未知')
+const weatherEntity = computed(() => {
+  // 1. 优先搜索和风天气
+  const hefeng = props.haEntities.find(e => e.entity_id === 'weather.he_feng_tian_qi')
+  if (hefeng) return hefeng
+  
+  // 2. 其次根据 ID 或带有预报的实体
+  return props.haEntities.find(e => e.entity_id === props.weatherEntityId) ||
+    props.haEntities.find(e => e.entity_id.startsWith('weather.') && (e.attributes?.forecast || e.attributes?.temp_high)) ||
+    props.haEntities.find(e => e.entity_id.startsWith('weather.')) || null
+})
+
+// 从 summary 中优先读取后端聚合好的数据（因为后端现在会主动抓取服务预报）
+const weatherData = computed(() => props.summary?.weather || {})
+
+const weatherText = computed(() => weatherData.value?.state || weatherEntity.value?.state || '未知')
 const weatherTemperature = computed(() => {
-  const v = weatherEntity.value?.attributes?.temperature
+  const v = weatherData.value?.temperature || weatherEntity.value?.attributes?.temperature
   return v !== undefined && v !== null ? `${Math.round(Number(v))}°` : '--'
 })
 const weatherHumidity = computed(() => {
-  const v = weatherEntity.value?.attributes?.humidity
+  const v = weatherData.value?.humidity || weatherEntity.value?.attributes?.humidity
   return v !== undefined && v !== null ? `${Math.round(Number(v))}%` : '--'
 })
 const weatherHigh = computed(() => {
-  const a = weatherEntity.value?.attributes || {}
-  return a.temperature_high || (a.forecast?.[0]?.temperature) || '--'
+  return weatherData.value?.temperature_high || '--'
 })
 const weatherLow = computed(() => {
-  const a = weatherEntity.value?.attributes || {}
-  return a.temperature_low || (a.forecast?.[0]?.templow) || '--'
+  return weatherData.value?.temperature_low || '--'
 })
 
 const getFcEmoji = (cond) => {
@@ -133,11 +141,13 @@ const getFcEmoji = (cond) => {
 }
 
 const weatherForecast = computed(() => {
-  const fc = weatherEntity.value?.attributes?.forecast || []
-  return fc.slice(1, 4).map(item => {
+  // 优先使用后端聚合的预报
+  const fc = weatherData.value?.forecast || weatherEntity.value?.attributes?.forecast || []
+  return fc.slice(0, 3).map(item => {
     try {
+      const dt = item.datetime ? new Date(item.datetime) : new Date();
       return {
-        weekday: new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }),
+        weekday: dt.toLocaleDateString('zh-CN', { weekday: 'short' }),
         condition: item.condition,
         temp: item.temperature
       }
@@ -147,7 +157,7 @@ const weatherForecast = computed(() => {
   })
 })
 
-const weatherEmoji = computed(() => getFcEmoji(weatherEntity.value?.state))
+const weatherEmoji = computed(() => getFcEmoji(weatherText.value))
  
 const activeStatusButtons = computed(() => {
   const btns = []

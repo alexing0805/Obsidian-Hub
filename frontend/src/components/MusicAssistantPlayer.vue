@@ -1,82 +1,91 @@
 <template>
-  <div class="p-1 flex-1 flex flex-col min-h-0">
-    <div class="glass-panel rounded-[1.5rem] p-3 card-hover flex flex-col min-h-0 relative overflow-hidden group">
+  <div class="p-1 flex-1 flex flex-col min-h-0 h-full">
+    <div class="glass-panel rounded-[2rem] p-5 flex flex-col h-full min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
       
+      <!-- 动态氛围背景 (与侧边栏联动) -->
+      <div v-if="playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse transition-opacity duration-1000"></div>
+
       <!-- 1. 顶部：播放器选择 + 状态 -->
-      <div class="flex items-center justify-between gap-2 mb-2 relative z-10 shrink-0">
+      <div class="flex items-center justify-between gap-3 mb-6 relative z-10 shrink-0">
         <div class="relative flex-1">
           <button 
-            class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-left w-full group/btn"
+            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left w-full group/btn"
             @click="showSelector = !showSelector"
           >
-            <div class="w-1.5 h-1.5 rounded-full" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
-            <span class="text-[10px] font-black text-white/60 uppercase tracking-tighter truncate flex-1">
+            <div class="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)]" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
+            <span class="text-[11px] font-black text-white/70 uppercase tracking-tighter truncate flex-1">
               {{ activePlayerName || 'Select Player' }}
             </span>
-            <span class="text-[8px] text-white/20 group-hover/btn:text-white/40">▼</span>
+            <span class="text-[8px] text-white/20 group-hover/btn:text-white/40 transition-colors">▼</span>
           </button>
           
           <!-- 内置选择器下拉 -->
-          <div v-if="showSelector" class="absolute left-0 top-full mt-1 w-full z-50 bg-neutral-900/95 backdrop-blur-2xl rounded-xl border border-white/10 shadow-2xl py-1 max-h-[200px] overflow-y-auto animate-fade-in">
+          <div v-if="showSelector" class="absolute left-0 top-full mt-2 w-full z-50 bg-neutral-900/98 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 max-h-[250px] overflow-y-auto animate-fade-in ring-1 ring-white/5">
             <div 
               v-for="p in maState.players || []" :key="p.player_id"
-              class="px-3 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/10 transition-colors"
+              class="px-4 py-2.5 text-[11px] font-bold cursor-pointer hover:bg-white/10 transition-colors flex items-center justify-between"
               :class="maState.active_player_id === p.player_id ? 'text-cyan-400 bg-cyan-400/10' : 'text-white/60'"
               @click="onSelectPlayer(p)"
             >
-              {{ p.friendly_name || p.name }}
+              <span>{{ p.friendly_name || p.name }}</span>
+              <div v-if="p.playback_state === 'playing'" class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
             </div>
-            <div v-if="!(maState.players || []).length" class="px-3 py-2 text-[10px] text-white/30 italic">No players</div>
+            <div v-if="!(maState.players || []).length" class="px-4 py-3 text-[11px] text-white/30 italic">No players available</div>
           </div>
         </div>
-        <span class="text-[8px] text-white/10 font-bold uppercase tracking-widest truncate max-w-[60px]">{{ queueLabel }}</span>
+        <span class="text-[9px] text-white/20 font-black uppercase tracking-[0.2em] truncate max-w-[80px] bg-white/5 px-2 py-0.5 rounded-md border border-white/5">{{ queueLabel }}</span>
       </div>
  
-      <!-- 2. 中间：曲目信息 (横向展示) -->
-      <div class="flex items-center gap-3 mb-3 shrink-0 px-1">
-        <div class="w-10 h-10 rounded-lg overflow-hidden relative shadow-md ring-1 ring-white/10 bg-black/40 shrink-0">
-          <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover" />
-          <div v-if="playState === 'playing'" class="absolute inset-0 bg-black/30 flex items-center justify-center">
-             <div class="flex gap-[1px] items-end pb-0.5">
-               <span class="w-[1.5px] h-1.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]"></span>
-               <span class="w-[1.5px] h-2.5 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]"></span>
-               <span class="w-[1.5px] h-1.5 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]"></span>
+      <!-- 2. 中间：曲目信息 (占据核心高度) -->
+      <div class="flex-1 flex flex-col items-center justify-center min-h-0 py-4">
+        <div class="w-28 h-28 rounded-[2rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 mb-6 group-hover:scale-105 transition-transform duration-500">
+          <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover transition-opacity duration-700" :class="artworkUrl ? 'opacity-100' : 'opacity-20'" />
+          <div v-if="playState === 'playing'" class="absolute bottom-3 right-3 p-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg scale-75">
+             <div class="flex gap-1 items-end h-3 w-4">
+                <span class="w-1 h-1.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]"></span>
+                <span class="w-1 h-3 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]"></span>
+                <span class="w-1 h-2 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]"></span>
              </div>
           </div>
         </div>
-        <div class="flex-1 min-w-0">
-          <h3 class="font-bold text-[11px] leading-tight text-white truncate font-heading">{{ trackName || 'Ready' }}</h3>
-          <p class="text-[9px] font-medium text-cyan-400/50 truncate tracking-wide">{{ artistName || 'Music Assistant' }}</p>
+        
+        <div class="text-center max-w-full px-2">
+          <h3 class="font-black text-[15px] leading-tight text-white mb-2 line-clamp-2 tracking-tight group-hover:text-cyan-400 transition-colors">{{ trackName || 'Ready to Play' }}</h3>
+          <p class="text-[11px] font-bold text-white/40 tracking-[0.05em] truncate uppercase">{{ artistName || 'Music Assistant' }}</p>
         </div>
       </div>
- 
-      <!-- 3. 控制与进度 (紧凑集成) -->
-      <div class="space-y-2 mt-auto">
-        <div class="flex items-center gap-3 px-1">
-          <div class="progress-bar-track flex-1 h-1 bg-white/5 rounded-full cursor-pointer relative" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
-            <div class="h-full bg-cyan-400 rounded-full" :style="{ width: progressPercent + '%' }"></div>
+  
+      <!-- 3. 控制与进度 (置底并自适应) -->
+      <div class="space-y-5 mt-auto pt-4 relative z-10 shrink-0">
+        <div class="flex items-center gap-4 px-1">
+          <span class="text-[9px] font-black text-white/20 tabular-nums w-10">{{ formatTime(currentElapsed) }}</span>
+          <div class="progress-bar-track flex-1 h-1.5 bg-white/5 rounded-full cursor-pointer relative hover:h-2 transition-all group/progress" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
+            <div class="h-full bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-[width] duration-300 ease-out" :style="{ width: progressPercent + '%' }"></div>
+            <!-- Progress Knob -->
+            <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-cyan-500 shadow-xl opacity-0 group-hover/progress:opacity-100 transition-opacity" :style="{ left: progressPercent + '%' }"></div>
           </div>
-          <span class="text-[8px] font-black text-white/20 tabular-nums w-8 text-right">{{ formatTime(currentElapsed) }}</span>
+          <span class="text-[9px] font-black text-white/20 tabular-nums w-10 text-right">{{ formatTime(duration) }}</span>
         </div>
 
-        <div class="flex items-center justify-between px-1">
-          <div class="flex items-center gap-2">
-            <button class="p-1 text-white/20 hover:text-white transition-all active:scale-75" :disabled="!activeQueueId" @click="prevTrack">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        <div class="flex items-center justify-between px-2">
+          <div class="flex items-center gap-4">
+            <button class="p-2 text-white/30 hover:text-white transition-all active:scale-75 disabled:opacity-10" :disabled="!activeQueueId" @click="prevTrack">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
             </button>
-            <button class="w-8 h-8 flex items-center justify-center bg-white text-black rounded-lg shadow-sm transition-all active:scale-90" :disabled="!activeQueueId" @click="togglePlay">
-              <svg v-if="playState === 'playing'" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              <svg v-else class="w-4 h-4 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <button class="w-12 h-12 flex items-center justify-center bg-white text-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-10" :disabled="!activeQueueId" @click="togglePlay">
+              <svg v-if="playState === 'playing'" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <svg v-else class="w-5 h-5 translate-x-[2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
             </button>
-            <button class="p-1 text-white/20 hover:text-white transition-all active:scale-75" :disabled="!activeQueueId" @click="nextTrack">
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            <button class="p-2 text-white/30 hover:text-white transition-all active:scale-75 disabled:opacity-10" :disabled="!activeQueueId" @click="nextTrack">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
             </button>
           </div>
 
-          <div class="flex-1 max-w-[80px] flex items-center gap-2 bg-black/10 px-2 py-1 rounded-md border border-white/5">
-            <svg class="w-2.5 h-2.5 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
-            <div class="volume-track relative flex-1 h-0.5 bg-white/5 rounded-full cursor-pointer" @click="onVolumeClick" @mousedown.prevent="onVolumeMouseDown">
-              <div class="h-full bg-white/20 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
+          <div class="flex items-center gap-3 bg-white/5 py-1.5 px-3 rounded-2xl border border-white/5 min-w-[90px]">
+            <svg class="w-3.5 h-3.5 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536l-3.536 3.536L2 20h2.828l3.536-3.536M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <div class="volume-track relative flex-1 h-1 bg-white/5 rounded-full cursor-pointer group/vol" @click="onVolumeClick" @mousedown.prevent="onVolumeMouseDown">
+              <div class="h-full bg-white/40 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
+              <div class="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full opacity-0 group-hover/vol:opacity-100 transition-opacity" :style="{ left: displayedVolume + '%' }"></div>
             </div>
           </div>
         </div>

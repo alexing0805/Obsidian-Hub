@@ -178,12 +178,17 @@ def choose_by_device_class(
     return candidates[0][1]
 
 
-def build_ha_summary(entities: list[dict[str, Any]]) -> dict[str, Any]:
+def build_ha_summary(entities: list[dict[str, Any]], forecast_data: list[dict[str, Any]] = None) -> dict[str, Any]:
     lights = [entity for entity in entities if entity["entity_id"].startswith("light.")]
     climates = [entity for entity in entities if entity["entity_id"].startswith("climate.")]
     weather_entities = [
         entity for entity in entities if entity["entity_id"].startswith("weather.")
     ]
+    # 优先使用和风天气
+    he_feng = next((w for w in weather_entities if w["entity_id"] == "weather.he_feng_tian_qi"), None)
+    weather_entity = he_feng or next((w for w in weather_entities if w.get("attributes", {}).get("forecast")), None)
+    if not weather_entity and weather_entities:
+        weather_entity = weather_entities[0]
 
     low_battery_count = 0
     offline_count = 0
@@ -231,13 +236,20 @@ def build_ha_summary(entities: list[dict[str, Any]]) -> dict[str, Any]:
             "entity_id": weather_entity.get("entity_id"),
             "state": weather_entity.get("state"),
             "temperature": weather_attrs.get("temperature"),
-            "temperature_high": weather_attrs.get("temperature_high") or (weather_attrs.get("forecast")[0].get("temperature") if weather_attrs.get("forecast") else None),
-            "temperature_low": weather_attrs.get("temperature_low") or (weather_attrs.get("forecast")[0].get("templow") if weather_attrs.get("forecast") else None),
-            "humidity": weather_attrs.get("humidity"),
             "precipitation": weather_attrs.get("precipitation"),
             "friendly_name": weather_attrs.get("friendly_name"),
             "forecast": (weather_attrs.get("forecast")[:3] if weather_attrs.get("forecast") else []),
+            "temperature_high": weather_attrs.get("temperature_high") or weather_attrs.get("temp_high"),
+            "temperature_low": weather_attrs.get("temperature_low") or weather_attrs.get("temp_low") or weather_attrs.get("templow"),
         }
+        
+        # 如果当前实体没有内建预报，尝试从外部传入的 forecast_map 中获取
+        if not summary["weather"]["forecast"] and forecast_data:
+            summary["weather"]["forecast"] = forecast_data[:3]
+            if forecast_data:
+                f0 = forecast_data[0]
+                summary["weather"]["temperature_high"] = summary["weather"]["temperature_high"] or f0.get("temperature")
+                summary["weather"]["temperature_low"] = summary["weather"]["temperature_low"] or f0.get("templow") or f0.get("temperature_low")
 
     return summary
 
@@ -550,12 +562,37 @@ async def broadcast(payload: dict[str, Any]) -> None:
         active_connections.discard(connection)
 
 
+async def fetch_ha_forecasts(entity_id: str) -> list[dict[str, Any]]:
+    headers = {"Authorization": f"Bearer {_HA_TOKEN}", "Content-Type": "application/json"}
+    url = f"{_HA_URL}/api/services/weather/get_forecasts"
+    try:
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.post(url, headers=headers, json={"entity_id": entity_id, "type": "daily"})
+            if resp.status_code == 200:
+                data = resp.json()
+                return data.get(entity_id, {}).get("forecast", [])
+    except Exception as e:
+        print(f"Failed to fetch HA forecasts for {entity_id}: {e}")
+    return []
+
+
 async def refresh_ha_state_once() -> bool:
     global ha_entities, ha_summary, ha_signature
 
     entities = await fetch_ha_entities_from_server()
+    
+    # 查找天气实体并抓取预报
+    weather_forecast_data = []
+    weather_target = next((e for e in entities if e["entity_id"] == "weather.he_feng_tian_qi"), None)
+    if not weather_target:
+        weather_target = next((e for e in entities if e["entity_id"].startswith("weather.")), None)
+    
+    if weather_target:
+        weather_forecast_data = await fetch_ha_forecasts(weather_target["entity_id"])
+
     signature = build_ha_signature(entities)
-    summary = build_ha_summary(entities)
+    # 将预报数据传递给 summary 构建器
+    summary = build_ha_summary(entities, forecast_data=weather_forecast_data)
     changed = signature != ha_signature
 
     async with ha_lock:
