@@ -1,3 +1,4 @@
+<template>
   <div class="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-12" @click.self="$emit('close')">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-all duration-500" @click="$emit('close')"></div>
  
