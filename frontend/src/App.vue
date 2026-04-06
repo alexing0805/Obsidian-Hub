@@ -84,82 +84,84 @@
         </div>
       </div>
 
-      <aside v-if="showSidebar && currentTab !== 'settings'" class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex">
-        <div class="p-4 border-b border-white/10">
-          <div class="text-center mb-4">
-            <div class="text-3xl font-light tracking-wider">{{ currentTime }}</div>
-            <div class="text-xs text-white/40 mt-1">{{ currentDate }}</div>
-          </div>
+      <aside v-if="showSidebar || currentTab === 'settings'" class="w-[340px] glass-effect flex-col border-l border-white/10 hidden lg:flex overflow-y-auto">
+        <template v-if="currentTab === 'settings'">
+          <SettingsView
+            :ha-entities="haEntities"
+            :ha-connected="haConnected"
+            :ma-connected="maConnected"
+            :ma-state="maState"
+            :system-status="systemStatus"
+            @save="onSettingsSave"
+            @restart="onSettingsRestart"
+            @toggle-sidebar="showSidebar = $event"
+          />
+        </template>
+        <template v-else>
+          <div class="p-4 border-b border-white/10">
+            <div class="text-center mb-4">
+              <div class="text-3xl font-light tracking-wider">{{ currentTime }}</div>
+              <div class="text-xs text-white/40 mt-1">{{ currentDate }}</div>
+            </div>
 
-          <div class="glass-effect rounded-xl p-4 card-hover">
-            <div class="flex items-start justify-between mb-3">
+            <div class="glass-effect rounded-xl p-4 card-hover">
+              <div class="flex items-start justify-between mb-3">
+                <div>
+                  <div class="text-4xl mb-1">{{ weatherEmoji }}</div>
+                  <div class="text-2xl font-light">{{ weatherTemperature }}</div>
+                  <div class="text-xs text-white/50">{{ weatherText }}</div>
+                </div>
+                <div class="text-right text-xs text-white/40">
+                  <div>{{ weatherName }}</div>
+                  <div class="text-white/60 mt-1">今日天气</div>
+                </div>
+              </div>
+
+              <div class="mb-2">
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-white/40">空气湿度</span>
+                  <span class="text-white/60">{{ weatherHumidity }}</span>
+                </div>
+                <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div class="h-full bg-cyan-500 rounded-full" :style="{ width: weatherHumidityPercent + '%' }"></div>
+                </div>
+              </div>
+
               <div>
-                <div class="text-4xl mb-1">{{ weatherEmoji }}</div>
-                <div class="text-2xl font-light">{{ weatherTemperature }}</div>
-                <div class="text-xs text-white/50">{{ weatherText }}</div>
-              </div>
-              <div class="text-right text-xs text-white/40">
-                <div>{{ weatherName }}</div>
-                <div class="text-white/60 mt-1">今日天气</div>
-              </div>
-            </div>
-
-            <div class="mb-2">
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-white/40">空气湿度</span>
-                <span class="text-white/60">{{ weatherHumidity }}</span>
-              </div>
-              <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div class="h-full bg-cyan-500 rounded-full" :style="{ width: weatherHumidityPercent + '%' }"></div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex justify-between text-xs mb-1">
-                <span class="text-white/40">降水量</span>
-                <span class="text-white/60">{{ weatherPrecipitation }}</span>
-              </div>
-              <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                <div class="h-full bg-white/30 rounded-full" :style="{ width: weatherPrecipitationPercent + '%' }"></div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-white/40">降水量</span>
+                  <span class="text-white/60">{{ weatherPrecipitation }}</span>
+                </div>
+                <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                  <div class="h-full bg-white/30 rounded-full" :style="{ width: weatherPrecipitationPercent + '%' }"></div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="p-4 border-b border-white/10">
-          <div class="grid grid-cols-2 gap-2">
-            <div class="glass-effect rounded-xl p-3 text-center card-hover">
-              <div class="text-xs text-white/60">亮灯</div>
-              <div class="text-xl font-bold text-yellow-300">{{ summary.lights_on }}</div>
-            </div>
-            <div class="glass-effect rounded-xl p-3 text-center card-hover">
-              <div class="text-xs text-white/60">空调</div>
-              <div class="text-xl font-bold text-blue-300">{{ summary.climate_total }}</div>
-            </div>
-            <div class="glass-effect rounded-xl p-3 text-center card-hover">
-              <div class="text-xs text-white/60">低电量</div>
-              <div class="text-xl font-bold text-red-300">{{ summary.low_battery_count }}</div>
-            </div>
-            <div class="glass-effect rounded-xl p-3 text-center card-hover">
-              <div class="text-xs text-white/60">离线设备</div>
-              <div class="text-xl font-bold text-orange-300">{{ summary.offline_count }}</div>
+          <div class="p-4 border-b border-white/10">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="glass-effect rounded-xl p-3 text-center card-hover">
+                <div class="text-xs text-white/60">亮灯</div>
+                <div class="text-xl font-bold text-yellow-300">{{ summary.lights_on }}</div>
+              </div>
+              <div class="glass-effect rounded-xl p-3 text-center card-hover">
+                <div class="text-xs text-white/60">空调</div>
+                <div class="text-xl font-bold text-blue-300">{{ summary.climate_total }}</div>
+              </div>
+              <div class="glass-effect rounded-xl p-3 text-center card-hover">
+                <div class="text-xs text-white/60">低电量</div>
+                <div class="text-xl font-bold text-red-300">{{ summary.low_battery_count }}</div>
+              </div>
+              <div class="glass-effect rounded-xl p-3 text-center card-hover">
+                <div class="text-xs text-white/60">离线设备</div>
+                <div class="text-xl font-bold text-orange-300">{{ summary.offline_count }}</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <MusicAssistantPlayer v-if="currentTab !== 'settings'" :ma-state="maState" />
-
-      <SettingsView
-        v-if="currentTab === 'settings'"
-        :ha-entities="haEntities"
-        :ha-connected="haConnected"
-        :ma-connected="maConnected"
-        :ma-state="maState"
-        :system-status="systemStatus"
-        @save="onSettingsSave"
-        @restart="onSettingsRestart"
-        @toggle-sidebar="showSidebar = $event"
-      />
+          <MusicAssistantPlayer :ma-state="maState" />
+        </template>
       </aside>
     </main>
 
