@@ -199,7 +199,18 @@ const onIconClick = (mapping) => {
     activeEntity.value = mapping
   } else {
     // Toggle directly
-    emit('entity-toggle', { entity_id: mapping.entity_id, type: mapping.type })
+    const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
+    emit('entity-toggle', entity || mapping)
+  }
+}
+
+const onIconClick2 = (mapping) => {
+  if (editMode.value) return
+  const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
+  if (['空调', '传感器'].includes(mapping.type)) {
+    activeEntity.value = mapping
+  } else {
+    emit('entity-toggle', entity || mapping)
   }
 }
 

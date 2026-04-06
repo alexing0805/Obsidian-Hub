@@ -95,6 +95,7 @@
             :weather-entity-id="currentSettings.weather_entity_id || ''"
             :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
             @open="activeDetail = $event"
+            @toggle-light="onToggleLight"
           />
         </template>
       </aside>
@@ -130,6 +131,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
+import MusicPlayerSelector from './components/MusicPlayerSelector.vue'
 import SettingsView from './components/SettingsView.vue'
 import SidebarWidgets from './components/SidebarWidgets.vue'
 import DetailOverlay from './components/DetailOverlay.vue'
@@ -287,26 +289,24 @@ const onClimateAction = async ({ entity, action, value }) => {
   }
 }
 
-const onEntityToggle = ({ entity_id, type }) => {
-  if (type === '灯') {
-    const entity = haEntities.value.find(e => e.entity_id === entity_id)
-    if (entity) toggleLight(entity)
-  } else if (type === '空调') {
+const onEntityToggle = (arg) => {
+  const entity_id = typeof arg === 'string' ? arg : (arg?.entity_id || arg?.entity?.entity_id)
+  const entity = typeof arg === 'object' && arg?.entity ? arg.entity : haEntities.value.find(e => e.entity_id === entity_id)
+  if (!entity) return
+  if (entity.entity_id.startsWith('light.')) {
+    toggleLight(entity) else if (type === '空调') {
     const entity = haEntities.value.find(e => e.entity_id === entity_id)
     if (entity) {
       const newMode = entity.state === 'off' ? 'heat' : 'off'
       onClimateAction({ entity, action: 'mode', value: newMode })
     }
-  } else if (type === '开关') {
-    const entity = haEntities.value.find(e => e.entity_id === entity_id)
-    if (entity) {
-      const newState = entity.state === 'on' ? 'turn_off' : 'turn_on'
-      fetch('/api/ha/service', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain: 'switch', service: newState, entity_id })
-      })
-    }
+  } else if (entity.entity_id.startsWith('switch.')) {
+    const newState = entity.state === 'on' ? 'turn_off' : 'turn_on'
+    fetch('/api/ha/service', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: 'switch', service: newState, entity_id: entity.entity_id })
+    })
   }
 }
 
@@ -318,6 +318,24 @@ const onMappingUpdate = (updated) => {
 const onBgUpdate = (bgData) => {
   currentSettings.value = { ...currentSettings.value, floor_plan_image: bgData }
   saveSettingsLocal({ floor_plan_image: bgData })
+}
+
+const onSwitchPlayer = async (player) => {
+  try {
+    await fetch('/api/ma/switch_player', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_id: player.player_id })
+    })
+    await refreshInitialState()
+  } catch (e) {
+    console.error('Switch player failed:', e)
+  }
+}
+
+const onToggleLight = (entity_id) => {
+  const entity = haEntities.value.find(e => e.entity_id === entity_id)
+  if (entity) toggleLight(entity)
 }
 
 const onEntityAdd = (entity) => {
