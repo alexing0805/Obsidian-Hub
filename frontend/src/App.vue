@@ -130,7 +130,7 @@
     <DetailOverlay
       v-if="activeDetail"
       :type="activeDetail"
-      :ha-entities="haEntities"
+      :ha-entities="filteredEntities"
       :ma-state="maState"
       :weather-entity-id="currentSettings.weather_entity_id || ''"
       @close="activeDetail = null"
@@ -223,6 +223,32 @@ const floorLights = computed(() => {
   return haEntities.value
     .filter((entity) => entity.entity_id?.startsWith('light.'))
     .slice(0, lightPositions.length)
+})
+
+const filteredEntities = computed(() => {
+  const s = currentSettings.value
+  const selectedLights = s.selected_light_entities || []
+  const selectedClimates = s.selected_climate_entities || []
+  const selectedBatteries = s.selected_battery_entities || []
+  const selectedOffline = s.selected_offline_entities || []
+
+  return haEntities.value.filter(e => {
+    if (e.entity_id.startsWith('light.')) {
+      return selectedLights.length === 0 || selectedLights.includes(e.entity_id)
+    }
+    if (e.entity_id.startsWith('climate.')) {
+      return selectedClimates.length === 0 || selectedClimates.includes(e.entity_id)
+    }
+    if (e.entity_id.startsWith('weather.')) {
+      return true
+    }
+    const a = e.attributes || {}
+    if (a.device_class === 'battery') {
+      return selectedBatteries.length === 0 || selectedBatteries.includes(e.entity_id)
+    }
+    // offline - if selection is empty show all, otherwise only selected
+    return selectedOffline.length === 0 || selectedOffline.includes(e.entity_id)
+  })
 })
 
 const haConnected = computed(() => haEntities.value.length > 0)
