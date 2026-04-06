@@ -1,22 +1,20 @@
 <template>
-  <div class="settings-view p-6 overflow-y-auto h-full">
-    <div class="max-w-2xl mx-auto space-y-6">
+  <div class="settings-view p-5 overflow-y-auto h-full">
+    <div class="max-w-2xl mx-auto space-y-5">
 
       <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-xl font-bold">系统设置</h2>
-          <p class="text-xs text-white/40 mt-1">配置 Home Assistant 与 Music Assistant 连接</p>
+          <h2 class="text-lg font-bold">系统设置</h2>
+          <p class="text-xs text-white/40 mt-0.5">实时保存，无需重启</p>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="status-badge text-xs px-2 py-1 rounded" :class="saveStatusClass">{{ saveStatusText }}</span>
-        </div>
+        <span class="text-xs px-2 py-1 rounded" :class="saveStatusClass">{{ saveStatusText }}</span>
       </div>
 
       <!-- HA Settings -->
-      <div class="glass-effect rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-blue-600/30 flex items-center justify-center text-sm">🏠</div>
+      <div class="glass-effect rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-blue-600/30 flex items-center justify-center text-xs">🏠</div>
           <div>
             <h3 class="font-semibold text-sm">Home Assistant</h3>
             <p class="text-xs text-white/40">智能家居核心控制</p>
@@ -26,77 +24,41 @@
           </div>
         </div>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">HA URL</label>
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">HA URL</label>
+            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ha_url || '未配置' }}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">HA Token</label>
+            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ha_token_masked || '未配置' }}</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">刷新间隔</label>
             <input
-              v-model="settings.ha_url"
-              type="text"
-              placeholder="http://192.168.100.50:8123"
-              class="settings-input"
+              v-model.number="settings.ha_refresh_interval"
+              type="number" min="5" max="300"
+              class="settings-input flex-1"
               @input="markDirty"
             />
+            <span class="text-xs text-white/40">秒</span>
           </div>
-
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">HA Token</label>
-            <div class="relative">
-              <input
-                v-model="settings.ha_token"
-                :type="showHaToken ? 'text' : 'password'"
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                class="settings-input pr-10"
-                @input="markDirty"
-              />
-              <button
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-                @click="showHaToken = !showHaToken"
-              >
-                {{ showHaToken ? '🙈' : '👁️' }}
-              </button>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs text-white/60 mb-1.5">实体刷新间隔 (秒)</label>
-              <input
-                v-model.number="settings.ha_refresh_interval"
-                type="number"
-                min="5"
-                max="300"
-                class="settings-input"
-                @input="markDirty"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-white/60 mb-1.5">温度实体</label>
-              <select v-model="settings.temperature_entity" class="settings-input" @change="markDirty">
-                <option value="">自动选择</option>
-                <option v-for="entity in temperatureEntities" :key="entity.entity_id" :value="entity.entity_id">
-                  {{ entity.attributes?.friendly_name || entity.entity_id }}
-                </option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">湿度实体</label>
-            <select v-model="settings.humidity_entity" class="settings-input" @change="markDirty">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">温度实体</label>
+            <select v-model="settings.temperature_entity" class="settings-input flex-1" @change="markDirty">
               <option value="">自动选择</option>
-              <option v-for="entity in humidityEntities" :key="entity.entity_id" :value="entity.entity_id">
-                {{ entity.attributes?.friendly_name || entity.entity_id }}
+              <option v-for="e in temperatureEntities" :key="e.entity_id" :value="e.entity_id">
+                {{ e.attributes?.friendly_name || e.entity_id }}
               </option>
             </select>
           </div>
-
-          <div>
-            <button
-              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/40 w-28 shrink-0 text-right">* 如需修改 HA 配置，请更新容器环境变量后重启</label>
+          </div>
+          <div class="pt-1">
+            <button class="px-4 py-2 text-sm rounded-lg border transition-colors"
               :class="haConnected ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' : 'border-white/10 text-white/40'"
-              :disabled="!haConnected"
-              @click="testHAConnection"
-            >
+              @click="testHAConnection">
               测试连接
             </button>
           </div>
@@ -104,9 +66,9 @@
       </div>
 
       <!-- MA Settings -->
-      <div class="glass-effect rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-purple-600/30 flex items-center justify-center text-sm">🎵</div>
+      <div class="glass-effect rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-purple-600/30 flex items-center justify-center text-xs">🎵</div>
           <div>
             <h3 class="font-semibold text-sm">Music Assistant</h3>
             <p class="text-xs text-white/40">音乐播放控制</p>
@@ -116,56 +78,29 @@
           </div>
         </div>
 
-        <div class="space-y-4">
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">MA WebSocket URL</label>
-            <input
-              v-model="settings.ma_url"
-              type="text"
-              placeholder="ws://192.168.100.50:8095/ws"
-              class="settings-input"
-              @input="markDirty"
-            />
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">MA WebSocket</label>
+            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ma_url || '未配置' }}</span>
           </div>
-
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">MA Token</label>
-            <div class="relative">
-              <input
-                v-model="settings.ma_token"
-                :type="showMaToken ? 'text' : 'password'"
-                placeholder="长期令牌"
-                class="settings-input pr-10"
-                @input="markDirty"
-              />
-              <button
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
-                @click="showMaToken = !showMaToken"
-              >
-                {{ showMaToken ? '🙈' : '👁️' }}
-              </button>
-            </div>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">MA Token</label>
+            <span class="text-sm text-white/70 font-mono flex-1 truncate">{{ config.ma_token_masked || '未配置' }}</span>
           </div>
-
-          <div>
-            <label class="block text-xs text-white/60 mb-1.5">队列刷新间隔 (秒)</label>
+          <div class="flex items-center gap-3">
+            <label class="text-xs text-white/60 w-28 shrink-0">刷新间隔</label>
             <input
               v-model.number="settings.ma_refresh_interval"
-              type="number"
-              min="2"
-              max="60"
-              class="settings-input"
+              type="number" min="2" max="60"
+              class="settings-input flex-1"
               @input="markDirty"
             />
+            <span class="text-xs text-white/40">秒</span>
           </div>
-
-          <div>
-            <button
-              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+          <div class="pt-1">
+            <button class="px-4 py-2 text-sm rounded-lg border transition-colors"
               :class="maConnected ? 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10' : 'border-white/10 text-white/40'"
-              :disabled="!maConnected"
-              @click="testMAConnection"
-            >
+              @click="testMAConnection">
               测试连接
             </button>
           </div>
@@ -173,9 +108,9 @@
       </div>
 
       <!-- Light Mapping -->
-      <div class="glass-effect rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-yellow-600/30 flex items-center justify-center text-sm">💡</div>
+      <div class="glass-effect rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-yellow-600/30 flex items-center justify-center text-xs">💡</div>
           <div>
             <h3 class="font-semibold text-sm">灯光映射</h3>
             <p class="text-xs text-white/40">将 HA 灯光映射到面板显示位置</p>
@@ -183,135 +118,95 @@
         </div>
 
         <div class="space-y-2">
-          <div
-            v-for="(pos, index) in lightPositions"
-            :key="index"
-            class="flex items-center gap-3"
-          >
-            <span class="text-xs text-white/40 w-6 text-right">#{{ index + 1 }}</span>
-            <select
-              v-model="settings.light_mapping[index]"
-              class="settings-input flex-1"
-              @change="markDirty"
-            >
+          <div v-for="(_, i) in 8" :key="i" class="flex items-center gap-2">
+            <span class="text-xs text-white/40 w-5 shrink-0 text-right">#{{ i + 1 }}</span>
+            <select v-model="settings.light_mapping[i]" class="settings-input flex-1" @change="markDirty">
               <option value="">-- 不映射 --</option>
-              <option v-for="light in allLights" :key="light.entity_id" :value="light.entity_id">
-                {{ light.attributes?.friendly_name || light.entity_id }}
+              <option v-for="l in allLights" :key="l.entity_id" :value="l.entity_id">
+                {{ l.attributes?.friendly_name || l.entity_id }}
               </option>
             </select>
-            <div class="flex items-center gap-1">
-              <span class="text-xs text-white/40">X:</span>
-              <input
-                v-model.number="settings.light_positions[index].x"
-                type="number"
-                min="0"
-                max="800"
-                class="settings-input w-16 text-center"
-                @input="markDirty"
-              />
-              <span class="text-xs text-white/40">Y:</span>
-              <input
-                v-model.number="settings.light_positions[index].y"
-                type="number"
-                min="0"
-                max="600"
-                class="settings-input w-16 text-center"
-                @input="markDirty"
-              />
+            <div class="flex items-center gap-1 shrink-0">
+              <input v-model.number="settings.light_positions[i][0]" type="number" min="0" max="800"
+                class="settings-input w-16 text-center" @input="markDirty" />
+              <span class="text-xs text-white/40">,</span>
+              <input v-model.number="settings.light_positions[i][1]" type="number" min="0" max="600"
+                class="settings-input w-16 text-center" @input="markDirty" />
             </div>
           </div>
-          <p class="text-xs text-white/30 mt-2">位置坐标对应楼层 SVG 视图 (800×600)。点击"保存"后生效。</p>
+          <p class="text-xs text-white/30 mt-2">位置对应楼层 SVG 视图 (800×600)，格式：X,Y</p>
         </div>
       </div>
 
-      <!-- Display Settings -->
-      <div class="glass-effect rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-emerald-600/30 flex items-center justify-center text-sm">🖥️</div>
+      <!-- Display -->
+      <div class="glass-effect rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-emerald-600/30 flex items-center justify-center text-xs">🖥️</div>
           <div>
             <h3 class="font-semibold text-sm">显示</h3>
             <p class="text-xs text-white/40">界面显示选项</p>
           </div>
         </div>
 
-        <div class="space-y-4">
+        <div class="space-y-3">
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm">显示侧边栏</div>
-              <div class="text-xs text-white/40">在右侧显示天气、音乐控制面板</div>
+              <div class="text-xs text-white/40">总览页右侧显示天气/音乐面板</div>
             </div>
-            <button
-              class="w-12 h-6 rounded-full transition-colors relative"
+            <button class="w-11 h-6 rounded-full transition-colors relative"
               :class="settings.show_sidebar ? 'bg-emerald-500' : 'bg-white/20'"
-              @click="toggleSidebar"
-            >
-              <div
-                class="absolute top-1 w-4 h-4 rounded-full bg-white transition-transform"
-                :class="settings.show_sidebar ? 'translate-x-7' : 'translate-x-1'"
-              ></div>
+              @click="toggleSidebar">
+              <div class="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
+                :class="settings.show_sidebar ? 'translate-x-5.5' : 'translate-x-0.5'"></div>
             </button>
           </div>
-
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm">时钟格式</div>
-              <div class="text-xs text-white/40">24小时制 / 12小时制</div>
             </div>
             <div class="flex gap-2">
-              <button
-                class="px-3 py-1 text-xs rounded-lg transition-colors"
+              <button class="px-3 py-1 text-xs rounded-lg transition-colors"
                 :class="settings.clock_24h ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-white/40'"
-                @click="setClockFormat(true)"
-              >24H</button>
-              <button
-                class="px-3 py-1 text-xs rounded-lg transition-colors"
+                @click="settings.clock_24h = true; markDirty()">24H</button>
+              <button class="px-3 py-1 text-xs rounded-lg transition-colors"
                 :class="!settings.clock_24h ? 'bg-emerald-500/30 text-emerald-300' : 'bg-white/10 text-white/40'"
-                @click="setClockFormat(false)"
-              >12H</button>
+                @click="settings.clock_24h = false; markDirty()">12H</button>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="flex items-center gap-3 pt-2">
-        <button
-          class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-          :disabled="!isDirty || saving"
-          @click="saveSettings"
-        >
+      <div class="flex items-center gap-3">
+        <button class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+          :disabled="saving"
+          @click="saveSettings">
           {{ saving ? '保存中...' : '保存设置' }}
         </button>
-        <button
-          class="px-6 py-2.5 border border-white/20 text-white/60 hover:text-white hover:border-white/40 rounded-lg text-sm transition-colors"
-          :disabled="!isDirty"
-          @click="resetSettings"
-        >
+        <button class="px-5 py-2 border border-white/20 text-white/60 hover:text-white hover:border-white/40 rounded-lg text-sm transition-colors"
+          @click="resetSettings">
           重置
         </button>
-        <button
-          class="px-6 py-2.5 border border-white/10 text-white/30 hover:text-white/50 rounded-lg text-sm transition-colors ml-auto"
-          @click="restartService"
-        >
+        <button class="px-5 py-2 border border-white/10 text-white/30 hover:text-white/50 rounded-lg text-sm transition-colors ml-auto"
+          @click="restartService">
           重启服务
         </button>
       </div>
 
       <!-- System Info -->
-      <div class="glass-effect rounded-xl p-5">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm">ℹ️</div>
-          <div>
-            <h3 class="font-semibold text-sm">系统信息</h3>
-          </div>
+      <div class="glass-effect rounded-xl p-4">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center text-xs">ℹ️</div>
+          <h3 class="font-semibold text-sm">系统信息</h3>
         </div>
-        <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="grid grid-cols-2 gap-2 text-xs">
           <div class="bg-white/5 rounded-lg p-3">
             <div class="text-white/40 mb-1">版本</div>
             <div class="text-white font-mono">{{ systemInfo.version }}</div>
           </div>
           <div class="bg-white/5 rounded-lg p-3">
-            <div class="text-white/40 mb-1">HA 实体数</div>
+            <div class="text-white/40 mb-1">HA 实体</div>
             <div class="text-white font-mono">{{ systemInfo.ha_entity_count }}</div>
           </div>
           <div class="bg-white/5 rounded-lg p-3">
@@ -319,7 +214,7 @@
             <div class="text-white font-mono">{{ systemInfo.ma_players }}</div>
           </div>
           <div class="bg-white/5 rounded-lg p-3">
-            <div class="text-white/40 mb-1">WebSocket 客户端</div>
+            <div class="text-white/40 mb-1">WS 客户端</div>
             <div class="text-white font-mono">{{ systemInfo.ws_clients }}</div>
           </div>
         </div>
@@ -342,23 +237,17 @@ const props = defineProps({
 
 const emit = defineEmits(['save', 'restart', 'toggle-sidebar', 'settings-loaded'])
 
-const showHaToken = ref(false)
-const showMaToken = ref(false)
-const isDirty = ref(false)
 const saving = ref(false)
-const saveStatus = ref('idle') // idle | success | error
+const saveStatus = ref('idle')
+const config = ref({ ha_url: '', ha_token_masked: '', ma_url: '', ma_token_masked: '' })
 
 const defaultSettings = {
-  ha_url: '',
-  ha_token: '',
   ha_refresh_interval: 15,
+  ma_refresh_interval: 5,
   temperature_entity: '',
   humidity_entity: '',
-  ma_url: '',
-  ma_token: '',
-  ma_refresh_interval: 5,
   light_mapping: Array(8).fill(''),
-  light_positions: Array(8).fill(null).map(() => ({ x: 0, y: 0 })),
+  light_positions: [[140,130],[240,170],[560,130],[660,170],[120,350],[280,430],[430,390],[620,350]],
   show_sidebar: true,
   clock_24h: true
 }
@@ -368,32 +257,12 @@ const settings = ref({ ...defaultSettings })
 const allLights = computed(() =>
   props.haEntities.filter(e => e.entity_id.startsWith('light.'))
 )
-
 const temperatureEntities = computed(() =>
   props.haEntities.filter(e => {
-    const attrs = e.attributes || {}
-    return attrs.device_class === 'temperature' || e.entity_id.includes('temperature')
+    const a = e.attributes || {}
+    return a.device_class === 'temperature' || e.entity_id.includes('temperature')
   })
 )
-
-const humidityEntities = computed(() =>
-  props.haEntities.filter(e => {
-    const attrs = e.attributes || {}
-    return attrs.device_class === 'humidity' || e.entity_id.includes('humidity')
-  })
-)
-
-const lightPositions = computed(() => settings.value.light_positions)
-
-// Initialize light positions from parent if available
-const initLightPositions = () => {
-  const parentPositions = window.__OBSIDIAN_HUB_LIGHT_POSITIONS__
-  if (parentPositions && Array.isArray(parentPositions)) {
-    settings.value.light_positions = parentPositions.map(p =>
-      Array.isArray(p) ? { x: p[0], y: p[1] } : { x: 0, y: 0 }
-    )
-  }
-}
 
 const haConnectedText = computed(() => props.haConnected ? '已连接' : '未连接')
 const maConnectedText = computed(() => props.maConnected ? '已连接' : '未连接')
@@ -403,19 +272,16 @@ const haConnectedClass = computed(() =>
 const maConnectedClass = computed(() =>
   props.maConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
 )
-
 const saveStatusText = computed(() => {
   if (saveStatus.value === 'success') return '已保存'
   if (saveStatus.value === 'error') return '保存失败'
   return ''
 })
-
 const saveStatusClass = computed(() => {
   if (saveStatus.value === 'success') return 'bg-emerald-500/20 text-emerald-400'
   if (saveStatus.value === 'error') return 'bg-red-500/20 text-red-400'
   return ''
 })
-
 const systemInfo = computed(() => ({
   version: '1.0.0',
   ha_entity_count: props.haEntities.length,
@@ -423,39 +289,35 @@ const systemInfo = computed(() => ({
   ws_clients: props.systemStatus.ws_clients || 0
 }))
 
-const markDirty = () => {
-  isDirty.value = true
-  saveStatus.value = 'idle'
-}
+const isDirty = ref(false)
+
+const markDirty = () => { isDirty.value = true }
 
 const toggleSidebar = () => {
   settings.value.show_sidebar = !settings.value.show_sidebar
+  isDirty.value = true
   emit('toggle-sidebar', settings.value.show_sidebar)
-  markDirty()
-}
-
-const setClockFormat = (is24h) => {
-  settings.value.clock_24h = is24h
-  markDirty()
 }
 
 const saveSettings = async () => {
   saving.value = true
   saveStatus.value = 'idle'
   try {
-    const response = await fetch('/api/settings', {
+    const r = await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings.value)
     })
-    if (!response.ok) throw new Error('Save failed')
+    if (!r.ok) throw new Error(await r.text())
+    const data = await r.json()
     saveStatus.value = 'success'
     isDirty.value = false
-    emit('save', { ...settings.value })
+    emit('save', settings.value)
     setTimeout(() => { saveStatus.value = 'idle' }, 3000)
-  } catch (error) {
-    console.error('Failed to save settings:', error)
+  } catch (e) {
+    console.error('Save failed:', e)
     saveStatus.value = 'error'
+    setTimeout(() => { saveStatus.value = 'idle' }, 3000)
   } finally {
     saving.value = false
   }
@@ -468,9 +330,13 @@ const resetSettings = () => {
 
 const testHAConnection = async () => {
   try {
-    const response = await fetch('/api/status')
-    const data = await response.json()
-    alert(data.status?.ha_connected ? '✅ HA 连接正常' : '❌ HA 连接失败')
+    const r = await fetch('/api/status')
+    const d = await r.json()
+    const s = d.status || {}
+    const msg = s.ha_connected
+      ? `✅ HA 已连接\n实体数: ${s.ha_entity_count}`
+      : `❌ HA 未连接，请检查 URL 和 Token（需重启容器生效）`
+    alert(msg)
   } catch {
     alert('❌ HA 连接失败')
   }
@@ -478,60 +344,52 @@ const testHAConnection = async () => {
 
 const testMAConnection = async () => {
   try {
-    const response = await fetch('/api/status')
-    const data = await response.json()
-    alert(data.status?.ma_connected ? '✅ MA 连接正常' : '❌ MA 连接失败')
+    const r = await fetch('/api/status')
+    const d = await r.json()
+    const s = d.status || {}
+    const msg = s.ma_connected
+      ? '✅ MA 已连接'
+      : '❌ MA 未连接，请检查 URL 和 Token（需重启容器生效）'
+    alert(msg)
   } catch {
     alert('❌ MA 连接失败')
   }
 }
 
 const restartService = () => {
-  if (confirm('确定要重启服务吗？这将短暂中断连接。')) {
-    emit('restart')
-  }
+  if (confirm('确定要重启服务吗？')) emit('restart')
 }
 
 const loadSettings = async () => {
   try {
-    const response = await fetch('/api/settings')
-    if (response.ok) {
-      const data = await response.json()
-      if (data.settings) {
-        settings.value = { ...defaultSettings, ...data.settings }
-      }
+    const [settingsR, configR] = await Promise.all([
+      fetch('/api/settings'),
+      fetch('/api/config')
+    ])
+    if (settingsR.ok) {
+      const data = await settingsR.json()
+      settings.value = { ...defaultSettings, ...data.settings }
     }
-  } catch {
-    // Use defaults if API not available
+    if (configR.ok) {
+      const data = await configR.json()
+      config.value = data.config || {}
+    }
+  } catch (e) {
+    console.error('Failed to load settings:', e)
   }
-  initLightPositions()
   emit('settings-loaded', { ...settings.value })
 }
 
-onMounted(() => {
-  loadSettings()
-})
+onMounted(loadSettings)
 </script>
 
 <style scoped>
 .settings-input {
-  @apply w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white;
+  @apply bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white;
   @apply focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-colors;
 }
-.settings-input::placeholder {
-  @apply text-white/25;
-}
-.settings-view {
-  color: white;
-}
-.settings-view ::-webkit-scrollbar {
-  width: 4px;
-}
-.settings-view ::-webkit-scrollbar-track {
-  background: transparent;
-}
-.settings-view ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-}
+.settings-input::placeholder { @apply text-white/25; }
+.settings-view { color: white; }
+.settings-view ::-webkit-scrollbar { width: 4px; }
+.settings-view ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 </style>

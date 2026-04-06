@@ -710,6 +710,20 @@ async def send_ma_cmd(cmd: MACmd):
     return {"success": True, "result": result}
 
 
+@app.get("/api/config")
+async def get_config():
+    """Return current HA/MA configuration (read-only, from environment)."""
+    return {
+        "success": True,
+        "config": {
+            "ha_url": HA_URL,
+            "ha_token_masked": ("***" + HA_TOKEN[-8:]) if HA_TOKEN else "",
+            "ma_url": MA_URL,
+            "ma_token_masked": ("***" + MA_TOKEN[-8:]) if MA_TOKEN else "",
+        }
+    }
+
+
 @app.get("/api/settings")
 async def get_settings():
     """Return current frontend-accessible settings (read-only view)."""
