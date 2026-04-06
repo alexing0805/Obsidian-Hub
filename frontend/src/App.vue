@@ -55,8 +55,8 @@
     <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
-      <div class="flex-1 p-5 md:p-8 overflow-hidden bg-black/20">
-        <div class="w-full h-full rounded-[2rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
+      <div class="flex-1 p-4 md:p-6 overflow-hidden bg-black/20">
+        <div class="w-full h-full rounded-[2.5rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
           <transition name="fade" mode="out-in">
             <component 
               :is="currentTab === 'overview' ? FloorPlanView : (currentTab === 'settings' ? 'div' : 'div')"
@@ -69,7 +69,6 @@
               @entity-toggle="onEntityToggle"
               @mapping-update="onMappingUpdate"
               @bg-update="onBgUpdate"
-              @entity-add="onEntityAdd"
               @climate-action="onClimateAction"
               class="w-full h-full"
             />
@@ -77,11 +76,11 @@
         </div>
       </div>
  
-      <!-- 右侧边栏 -->
+      <!-- 右侧边栏 (宽度回缩) -->
       <aside v-if="showSidebar || currentTab === 'settings'"
-        class="w-[380px] glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_30px_rgba(0,0,0,0.3)]"
+        class="w-80 glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_40px_rgba(0,0,0,0.4)]"
         :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1 overflow-hidden">
           <transition name="fade" mode="out-in">
             <SettingsView
               v-if="currentTab === 'settings'"

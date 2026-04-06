@@ -65,6 +65,13 @@
         {{ editMode ? 'DONE' : 'EDIT PLAN' }}
       </button>
  
+      <!-- 添加设备 -->
+      <button v-if="editMode"
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
+        @click="showAddDrawer = true">
+        ADD DEVICE
+      </button>
+
       <!-- 上传背景图 -->
       <label v-if="editMode"
         class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-white/60 border-white/10 cursor-pointer hover:bg-white/10 transition-all">
@@ -74,11 +81,53 @@
  
       <!-- 保存位置 -->
       <button v-if="editMode && hasChanges"
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-emerald-400 border-emerald-500/50 bg-emerald-500/10 animate-bounce"
+        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-emerald-400 border-emerald-500/50 bg-emerald-500/10 animate-pulse"
         @click="savePositions">
         SAVE CHANGES
       </button>
     </div>
+ 
+    <!-- 添加设备抽屉 (Modal) -->
+    <Teleport to="body">
+      <div v-if="showAddDrawer" class="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-xl" @click="showAddDrawer = false"></div>
+        <div class="relative glass-panel rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-white/10 flex flex-col animate-fade-in">
+          <div class="p-6 border-b border-white/5 flex items-center justify-between">
+            <h3 class="text-xl font-heading font-extrabold text-white">Add Device to Plan</h3>
+            <button class="text-white/20 hover:text-white" @click="showAddDrawer = false">✕</button>
+          </div>
+          
+          <div class="p-4 border-b border-white/5">
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Search entities (e.g. light.kitchen)" 
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            />
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            <div 
+              v-for="entity in availableEntities" 
+              :key="entity.entity_id"
+              class="flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all group"
+              @click="addEntityToPlan(entity)"
+            >
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
+                <span class="text-[10px] uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
+              </div>
+              <button class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                Select
+              </button>
+            </div>
+            <div v-if="availableEntities.length === 0" class="text-center py-20 text-white/20">
+               No entities found
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
  
     <!-- 左上角：图层/模式切换 -->
     <div class="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[70%]">
@@ -136,6 +185,41 @@ const activeEntity = ref(null)
 const localMappings = ref([])
 const localBgImage = ref('')
 const hasChanges = ref(false)
+const showAddDrawer = ref(false)
+const searchQuery = ref('')
+ 
+const availableEntities = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+  const mappedIds = localMappings.value.map(m => m.entity_id)
+  return props.haEntities.filter(e => {
+    const isMapped = mappedIds.includes(e.entity_id)
+    if (isMapped) return false
+    const name = (e.attributes?.friendly_name || '').toLowerCase()
+    const id = e.entity_id.toLowerCase()
+    return name.includes(query) || id.includes(query)
+  }).slice(0, 50)
+})
+
+const addEntityToPlan = (entity) => {
+  const type = entity.entity_id.startsWith('light.') ? '灯' : 
+               entity.entity_id.startsWith('climate.') ? '空调' : 
+               entity.entity_id.startsWith('switch.') ? '开关' :
+               entity.entity_id.startsWith('sensor.') ? '传感器' : '其他'
+  
+  const newMapping = {
+    entity_id: entity.entity_id,
+    x: 0.5,
+    y: 0.5,
+    type,
+    label: entity.attributes?.friendly_name || entity.entity_id,
+    layer: activeLayer.value === '全部' ? '客厅' : activeLayer.value
+  }
+  
+  localMappings.value = [...localMappings.value, newMapping]
+  hasChanges.value = true
+  showAddDrawer.value = false
+  searchQuery.value = ''
+}
 
 const layers = ['全部', '客厅', '卧室', '厨房', '卫生间', '阳台']
 const activeLayer = ref('全部')
@@ -317,13 +401,43 @@ watch(() => props.bgImage, (v) => {
 </script>
 
 <style scoped>
-.entity-icon {
-  position: absolute;
-  transition: filter 0.2s;
-}
 .glass-effect {
-  background: rgba(20, 20, 40, 0.7);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 15, 30, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+ 
+.glow-yellow {
+  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
+  animation: glow-pulse-yellow 2s ease-in-out infinite;
+}
+ 
+.glow-blue {
+  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.8));
+  animation: glow-pulse-blue 2s ease-in-out infinite;
+}
+ 
+@keyframes glow-pulse-yellow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
+  50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)); }
+}
+ 
+@keyframes glow-pulse-blue {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5)); }
+  50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
+}
+ 
+@keyframes music-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 100%; }
+}
+ 
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+ 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

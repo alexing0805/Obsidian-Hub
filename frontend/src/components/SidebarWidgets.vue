@@ -1,118 +1,77 @@
 <template>
-  <div class="flex flex-col h-full">
-
-    <!-- 顶部时钟 -->
-    <div class="p-8 border-b border-white/5 shrink-0 relative overflow-hidden group">
-      <div v-if="maConnected && playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse"></div>
-      <div class="text-center">
-        <div class="text-5xl font-extrabold tracking-tight font-heading tabular-nums">{{ currentTime }}</div>
-        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-white/30 mt-2">{{ currentDate }}</div>
-      </div>
-    </div>
-
-    <!-- 天气 (大卡片) -->
-    <div v-if="widgets.weather && weatherEntity" class="px-6 py-4 shrink-0">
-      <div class="glass-panel rounded-3xl p-5 card-hover relative overflow-hidden cursor-pointer"
-        @click="$emit('open', 'weather')">
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex flex-col">
-            <span class="text-[10px] font-black uppercase tracking-widest text-cyan-400/60 mb-1">Current Weather</span>
-            <span class="text-2xl font-heading font-bold">{{ weatherText }}</span>
-          </div>
-          <span class="text-5xl drop-shadow-2xl">{{ weatherEmoji }}</span>
+  <div class="flex flex-col h-full overflow-hidden p-4 space-y-4">
+ 
+    <!-- 1. 灵动状态头 (时间 + 天气) -->
+    <div class="glass-panel rounded-[2rem] p-6 relative overflow-hidden group shrink-0">
+      <div v-if="maConnected && playState === 'playing'" class="absolute inset-0 bg-cyan-500/10 blur-3xl -z-10 animate-pulse"></div>
+      
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col">
+          <div class="text-4xl font-extrabold tracking-tighter font-heading tabular-nums leading-none mb-2">{{ currentTime }}</div>
+          <div class="text-[9px] font-black uppercase tracking-[0.2em] text-white/30">{{ currentDate }}</div>
         </div>
-        
-        <div class="flex items-end gap-3">
-          <span class="text-4xl font-heading font-extrabold">{{ weatherTemperature }}</span>
-          <div class="flex-1 border-b border-white/10 mb-2"></div>
-          <div class="text-right flex flex-col gap-0.5">
-            <div class="text-[10px] font-bold text-white/40 uppercase">Humidity <span class="text-white/80 ml-1 font-heading">{{ weatherHumidity }}</span></div>
-            <div class="text-[10px] font-bold text-white/40 uppercase">Wind <span class="text-white/80 ml-1 font-heading">{{ weatherWind || '--' }}</span></div>
-          </div>
+        <div class="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-2xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all" @click="$emit('open', 'weather')">
+           <span class="text-3xl filter drop-shadow-lg">{{ weatherEmoji }}</span>
+           <div class="flex flex-col items-end">
+             <span class="text-xl font-heading font-bold leading-none">{{ weatherTemperature }}</span>
+             <span class="text-[9px] font-black text-cyan-400/60 uppercase tracking-tighter">{{ weatherText }}</span>
+           </div>
         </div>
       </div>
     </div>
-
-    <!-- 侧边快捷统计 (网格化) -->
-    <div v-if="widgets.stats" class="px-6 py-2 shrink-0 grid grid-cols-2 gap-3">
-      <div class="glass-panel p-4 rounded-3xl card-hover cursor-pointer" @click="$emit('open', 'lights')">
-        <div class="text-2xl mb-1">💡</div>
-        <div class="text-lg font-heading font-extrabold text-yellow-400">{{ summary.lights_on }}<span class="text-xs text-white/20 font-medium ml-1">/ {{ summary.lights_total }}</span></div>
-        <div class="text-[9px] font-black uppercase tracking-widest text-white/30 mt-1">Lights</div>
+ 
+    <!-- 2. 功能矩阵 (1列 4个方形按钮) -->
+    <div v-if="widgets.stats" class="flex flex-col gap-3 shrink-0">
+      <!-- 灯光统计 -->
+      <div class="glass-panel aspect-video md:aspect-square flex flex-col items-center justify-center p-3 rounded-[1.5rem] card-hover cursor-pointer border-white/5 relative group"
+        @click="$emit('open', 'lights')">
+        <div class="text-3xl mb-1 group-hover:scale-110 transition-transform">💡</div>
+        <div class="text-lg font-heading font-black text-yellow-400 leading-none">{{ summary.lights_on }}<span class="text-[10px] text-white/20 font-medium ml-1">/{{ summary.lights_total }}</span></div>
+        <div class="text-[9px] font-black uppercase tracking-widest text-white/30 mt-1">Lighting</div>
+        <div v-if="summary.lights_on > 0" class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_#fbbf24]"></div>
       </div>
-      <div class="glass-panel p-4 rounded-3xl card-hover cursor-pointer" @click="$emit('open', 'climate')">
-        <div class="text-2xl mb-1">❄️</div>
-        <div class="text-lg font-heading font-extrabold text-blue-400">{{ summary.climate_online }}<span class="text-xs text-white/20 font-medium ml-1">/ {{ summary.climate_total }}</span></div>
+
+      <!-- 空调统计 -->
+      <div class="glass-panel aspect-video md:aspect-square flex flex-col items-center justify-center p-3 rounded-[1.5rem] card-hover cursor-pointer border-white/5 relative group"
+        @click="$emit('open', 'climate')">
+        <div class="text-3xl mb-1 group-hover:scale-110 transition-transform">❄️</div>
+        <div class="text-lg font-heading font-black text-blue-400 leading-none">{{ summary.climate_online }}<span class="text-[10px] text-white/20 font-medium ml-1">/{{ summary.climate_total }}</span></div>
         <div class="text-[9px] font-black uppercase tracking-widest text-white/30 mt-1">Climate</div>
       </div>
-    </div>
 
-    <!-- 列表（可滚动） -->
-    <div class="flex-1 overflow-y-auto p-6 space-y-4">
-
-      <!-- 灯光详细 (精简) -->
-      <div v-if="widgets.lights && topLights.length" class="space-y-3">
-        <div class="flex items-center justify-between px-2">
-          <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Lighting Control</span>
-          <button class="text-[9px] font-bold text-yellow-400/60 uppercase hover:text-yellow-400" @click="$emit('open', 'lights')">View All</button>
-        </div>
-        <div class="flex flex-wrap gap-2.5">
-          <div v-for="light in topLights.slice(0, 10)" :key="light.entity_id"
-            class="w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 transform active:scale-90"
-            :class="light.state === 'on' ? 'bg-yellow-400 text-black shadow-[0_4px_12px_rgba(251,191,36,0.4)]' : 'glass-panel text-white/20 hover:bg-white/5'"
-            @click.stop="$emit('toggle-light', { entity_id: light.entity_id, type: '灯' })"
-            :title="light.attributes?.friendly_name || light.entity_id">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M14 12a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-          </div>
-        </div>
-      </div>
-
-      <!-- 空调详细 -->
-      <div v-if="widgets.climate && topClimates.length" class="rounded-xl p-3 border border-blue-500/10">
-        <div class="flex items-center justify-between mb-2 cursor-pointer" @click="$emit('open', 'climate')">
-          <span class="text-xs text-white/40">❄️ 空调</span>
-          <span class="text-xs text-blue-300">点击详情 →</span>
-        </div>
-        <div class="space-y-1">
-          <div v-for="c in topClimates.slice(0, 3)" :key="c.entity_id"
-            class="flex items-center justify-between text-xs py-0.5 cursor-pointer hover:bg-white/5 rounded px-1"
-            @click.stop="$emit('open', 'climate')">
-            <span class="text-white/60 truncate">{{ c.attributes?.friendly_name || c.entity_id }}</span>
-            <span class="text-blue-300 shrink-0 ml-1">{{ c.attributes?.temperature || '--' }}°</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 低电量警告 -->
-      <div v-if="widgets.battery && lowBatteryEntities.length"
-        class="rounded-xl p-3 border border-red-500/20 cursor-pointer hover:bg-red-500/5 transition-colors"
+      <!-- 电池状态 -->
+      <div class="glass-panel aspect-video md:aspect-square flex flex-col items-center justify-center p-3 rounded-[1.5rem] card-hover cursor-pointer border-white/5 relative group"
         @click="$emit('open', 'battery')">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-red-400 font-medium">🔋 低电量 ({{ lowBatteryEntities.length }})</span>
-          <span class="text-xs text-red-400/50">详情 →</span>
+        <div class="text-3xl mb-1 group-hover:scale-110 transition-transform">🔋</div>
+        <div class="text-lg font-heading font-black leading-none" :class="lowBatteryEntities.length ? 'text-red-400' : 'text-emerald-400'">
+          {{ lowBatteryEntities.length || 'Full' }}
         </div>
+        <div class="text-[9px] font-black uppercase tracking-widest text-white/30 mt-1">Battery</div>
+        <div v-if="lowBatteryEntities.length" class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-red-400 animate-ping"></div>
       </div>
 
-      <!-- 离线警告 -->
-      <div v-if="widgets.offline && offlineEntities.length"
-        class="rounded-xl p-3 border border-orange-500/20 cursor-pointer hover:bg-orange-500/5 transition-colors"
+      <!-- 离线状态 -->
+      <div class="glass-panel aspect-video md:aspect-square flex flex-col items-center justify-center p-3 rounded-[1.5rem] card-hover cursor-pointer border-white/5 relative group"
         @click="$emit('open', 'offline')">
-        <div class="flex items-center justify-between">
-          <span class="text-xs text-orange-400 font-medium">📡 离线 ({{ offlineEntities.length }})</span>
-          <span class="text-xs text-orange-400/50">详情 →</span>
+        <div class="text-3xl mb-1 group-hover:scale-110 transition-transform">📡</div>
+        <div class="text-lg font-heading font-black leading-none" :class="offlineEntities.length ? 'text-orange-400' : 'text-white/20'">
+          {{ offlineEntities.length || 'Online' }}
         </div>
+        <div class="text-[9px] font-black uppercase tracking-widest text-white/30 mt-1">Status</div>
       </div>
-
-      <!-- 音乐 -->
-      <div v-if="widgets.music" class="rounded-xl p-3 border border-purple-500/10">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-white/40">🎵 音乐</span>
-          <MusicPlayerSelector :ma-state="maState" class="text-xs" @select-player="$emit('select-player', $event)" />
-        </div>
+    </div>
+ 
+    <!-- 3. 音乐播放器 (占据剩余空间) -->
+    <div v-if="widgets.music" class="flex-1 flex flex-col min-h-0 min-w-0">
+      <div class="flex items-center justify-between px-2 mb-2 shrink-0">
+        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/20">Music Player</span>
+        <MusicPlayerSelector :ma-state="maState" class="text-[10px]" @select-player="$emit('select-player', $event)" />
+      </div>
+      <div class="flex-1 min-h-0 bg-white/5 rounded-[2rem] border border-white/5 overflow-hidden flex flex-col">
         <MusicAssistantPlayer :ma-state="maState" />
       </div>
-
     </div>
+
   </div>
 </template>
 
