@@ -23,15 +23,18 @@
 
     <!-- 添加实体按钮（编辑模式下） -->
     <div v-if="editMode && showEntityPicker" class="absolute inset-0 z-20 flex items-center justify-center bg-black/60" @click.self="showEntityPicker = false">
-      <div class="glass-effect rounded-2xl p-4 w-80 max-h-[70vh] overflow-y-auto">
+      <div class="glass-effect rounded-2xl p-4 w-96 max-h-[70vh] overflow-y-auto">
         <div class="text-sm font-bold mb-3">添加到视图</div>
-        <div class="space-y-1">
-          <div v-for="entity in availableEntities" :key="entity.entity_id"
-            class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 cursor-pointer text-sm"
-            @click="addEntity(entity)">
-            <span>{{ entityIcon(entity) }}</span>
-            <span class="flex-1 truncate text-white/70">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
-            <span class="text-xs text-white/30">{{ entityType(entity) }}</span>
+        <div v-for="group in groupedAvailableEntities" :key="group.type" class="mb-3">
+          <div class="text-xs font-bold text-white/40 mb-1 uppercase">{{ group.icon }} {{ group.type }}</div>
+          <div class="space-y-0.5">
+            <div v-for="entity in group.entities" :key="entity.entity_id"
+              class="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/10 cursor-pointer text-xs"
+              @click="addEntity(entity)">
+              <span>{{ entityIcon(entity) }}</span>
+              <span class="flex-1 truncate text-white/70">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
+            </div>
+            <div v-if="!group.entities.length" class="text-xs text-white/20 px-3 py-1">无</div>
           </div>
         </div>
       </div>
@@ -108,6 +111,28 @@ const availableEntities = computed(() => {
   return props.haEntities.filter(e => !mappedIds.has(e.entity_id))
 })
 
+const groupedAvailableEntities = computed(() => {
+  const groups = {}
+  availableEntities.value.forEach(e => {
+    const type = entityType(e)
+    if (!groups[type]) groups[type] = []
+    groups[type].push(e)
+  })
+  const order = ['灯', '空调', '开关', '传感器', '其他']
+  return order
+    .filter(t => groups[t])
+    .map(type => ({
+      type,
+      icon: { '灯': '💡', '空调': '❄️', '开关': '🔌', '传感器': '🌡️', '其他': '📦' }[type],
+      entities: groups[type],
+    }))
+    .concat(
+      Object.keys(groups)
+        .filter(t => !order.includes(t))
+        .map(type => ({ type, icon: '📦', entities: groups[type] }))
+    )
+})
+
 // Convert entity mapping position (0-1) to world coords
 const toWorld = (x, y) => ({
   x: (x - 0.5) * ROOM_W,
@@ -132,6 +157,7 @@ const initThree = () => {
   camera = new THREE.PerspectiveCamera(45, w / h, 1, 50000)
   camera.position.set(0, ROOM_W * 1.2, 0)
   camera.lookAt(0, 0, 0)
+  camera.updateProjectionMatrix()
 
   // Renderer
   renderer = new THREE.WebGLRenderer({ canvas: canvas.value, antialias: true })
@@ -147,6 +173,7 @@ const initThree = () => {
   controls.maxPolarAngle = Math.PI / 2.2
   controls.minDistance = 500
   controls.maxDistance = ROOM_W * 3
+  controls.enabled = editMode.value  // Only enabled in edit mode
 
   // Ambient
   ambientLight = new THREE.AmbientLight(0x222233, 0.4)
@@ -167,6 +194,8 @@ const initThree = () => {
 
   // Room floor
   buildRoom()
+  // Furniture
+  buildFurniture()
 
   // Raycaster
   raycaster = new THREE.Raycaster()
@@ -180,31 +209,31 @@ const initThree = () => {
 }
 
 const buildRoom = () => {
-  // Floor
+  // Floor with tile-like pattern
   const floorGeo = new THREE.PlaneGeometry(ROOM_W, ROOM_D)
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a2e,
-    roughness: 0.9,
-    metalness: 0.1,
+    color: 0x1e1e32,
+    roughness: 0.85,
+    metalness: 0.05,
   })
   roomMesh = new THREE.Mesh(floorGeo, floorMat)
   roomMesh.rotation.x = -Math.PI / 2
   roomMesh.receiveShadow = true
   scene.add(roomMesh)
 
-  // Grid
-  const grid = new THREE.GridHelper(Math.max(ROOM_W, ROOM_D), 20, 0x333355, 0x222244)
+  // Grid lines
+  const grid = new THREE.GridHelper(Math.max(ROOM_W, ROOM_D), 24, 0x2a2a44, 0x1e1e30)
   grid.position.y = 1
   scene.add(grid)
 
-  // Walls (thin boxes)
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2a2a40, roughness: 0.8 })
+  // Walls
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x2e2e48, roughness: 0.8, metalness: 0.1 })
   const wallH = WALL_H
   const walls = [
-    { w: ROOM_W, d: 30, x: 0, z: -ROOM_D / 2 },  // north
-    { w: ROOM_W, d: 30, x: 0, z: ROOM_D / 2 },   // south
-    { w: 30, d: ROOM_D, x: -ROOM_W / 2, z: 0 }, // west
-    { w: 30, d: ROOM_D, x: ROOM_W / 2, z: 0 },  // east
+    { w: ROOM_W, d: 30, x: 0, z: -ROOM_D / 2 },
+    { w: ROOM_W, d: 30, x: 0, z: ROOM_D / 2 },
+    { w: 30, d: ROOM_D, x: -ROOM_W / 2, z: 0 },
+    { w: 30, d: ROOM_D, x: ROOM_W / 2, z: 0 },
   ]
   walls.forEach(({ w, d, x, z }) => {
     const geo = new THREE.BoxGeometry(w, wallH, d)
@@ -214,6 +243,107 @@ const buildRoom = () => {
     mesh.receiveShadow = true
     scene.add(mesh)
   })
+}
+
+const buildFurniture = () => {
+  const mat = (color, roughness = 0.7, metalness = 0.1) =>
+    new THREE.MeshStandardMaterial({ color, roughness, metalness })
+
+
+  // Sofa (L-shape)
+  const sofaBase = new THREE.Mesh(new THREE.BoxGeometry(900, 120, 400), mat(0x3a3a5c, 0.9))
+  sofaBase.position.set(-1800, 60, 2000)
+  sofaBase.castShadow = true; sofaBase.receiveShadow = true
+  scene.add(sofaBase)
+  const sofaBack = new THREE.Mesh(new THREE.BoxGeometry(900, 200, 60), mat(0x3a3a5c, 0.9))
+  sofaBack.position.set(-1800, 180, 2200); sofaBack.castShadow = true
+  scene.add(sofaBack)
+  const sofaArmL = new THREE.Mesh(new THREE.BoxGeometry(60, 180, 400), mat(0x3a3a5c, 0.9))
+  sofaArmL.position.set(-2250, 150, 2000); sofaArmL.castShadow = true
+  scene.add(sofaArmL)
+
+  // TV console
+  const tvCons = new THREE.Mesh(new THREE.BoxGeometry(1400, 80, 200), mat(0x2a2a40, 0.8))
+  tvCons.position.set(-1800, 40, -2100); tvCons.castShadow = true; tvCons.receiveShadow = true
+  scene.add(tvCons)
+  // TV screen
+  const tv = new THREE.Mesh(new THREE.BoxGeometry(1200, 700, 20), mat(0x111122, 0.2, 0.8))
+  tv.position.set(-1800, 430, -2100); tv.castShadow = true
+  scene.add(tv)
+  const tvFrame = new THREE.Mesh(new THREE.BoxGeometry(1240, 740, 15), mat(0x222233, 0.3, 0.9))
+  tvFrame.position.set(-1800, 430, -2108); tvFrame.castShadow = true
+  scene.add(tvFrame)
+
+  // Coffee table
+  const coffeeTable = new THREE.Mesh(new THREE.BoxGeometry(600, 30, 300), mat(0x4a3a2a, 0.8))
+  coffeeTable.position.set(-1800, 60, 900); coffeeTable.castShadow = true; coffeeTable.receiveShadow = true
+  scene.add(coffeeTable)
+  const ctLeg = (x, z) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 60, 6), mat(0x333333, 0.6, 0.8))
+    leg.position.set(x, 30, z); leg.castShadow = true
+    scene.add(leg)
+  }
+  ctLeg(-2100, 750); ctLeg(-1500, 750); ctLeg(-2100, 1050); ctLeg(-1500, 1050)
+
+  // Dining table
+  const dTable = new THREE.Mesh(new THREE.BoxGeometry(900, 50, 500), mat(0x3a2a1a, 0.85))
+  dTable.position.set(2800, 80, 1500); dTable.castShadow = true; dTable.receiveShadow = true
+  scene.add(dTable)
+  const dtLeg = (x, z) => {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 80, 8), mat(0x333333, 0.6, 0.8))
+    leg.position.set(x, 40, z); leg.castShadow = true
+    scene.add(leg)
+  }
+  dtLeg(2450, 1250); dtLeg(3150, 1250); dtLeg(2450, 1750); dtLeg(3150, 1750)
+
+  // Chairs (4)
+  const chairSeat = new THREE.BoxGeometry(180, 20, 180)
+  const chairBack = new THREE.BoxGeometry(180, 160, 20)
+  const chairLeg = new THREE.CylinderGeometry(10, 10, 80, 6)
+  const chairPositions = [
+    [2800 - 300, 1500], [2800 + 300, 1500],
+    [2800, 1500 - 300], [2800, 1500 + 300],
+  ]
+  const chairRotations = [0, 0, Math.PI / 2, Math.PI / 2]
+  chairPositions.forEach(([x, z], i) => {
+    const seat = new THREE.Mesh(chairSeat, mat(0x4a3a2a, 0.9))
+    seat.position.set(x, 80, z); seat.castShadow = true; seat.receiveShadow = true
+    seat.rotation.y = chairRotations[i]
+    scene.add(seat)
+    const back = new THREE.Mesh(chairBack, mat(0x4a3a2a, 0.9))
+    back.position.set(x + Math.sin(chairRotations[i]) * 90, 200, z + Math.cos(chairRotations[i]) * 90)
+    back.rotation.y = chairRotations[i]
+    back.castShadow = true
+    scene.add(back)
+    const legPos = [
+      [x - 60, z - 60], [x + 60, z - 60],
+      [x - 60, z + 60], [x + 60, z + 60],
+    ]
+    legPos.forEach(([lx, lz]) => {
+      const l = new THREE.Mesh(chairLeg, mat(0x333333, 0.6, 0.8))
+      l.position.set(lx, 40, lz); l.castShadow = true
+      scene.add(l)
+    })
+  })
+
+  // Bookshelf / storage unit
+  const shelf = new THREE.Mesh(new THREE.BoxGeometry(200, 600, 400), mat(0x3a2a1a, 0.85))
+  shelf.position.set(ROOM_W / 2 - 130, 300, -1200); shelf.castShadow = true; shelf.receiveShadow = true
+  scene.add(shelf)
+  // Shelf dividers
+  for (let row = 0; row < 3; row++) {
+    const divider = new THREE.Mesh(new THREE.BoxGeometry(190, 8, 390), mat(0x4a3a2a, 0.85))
+    divider.position.set(ROOM_W / 2 - 130, 120 + row * 160, -1200)
+    divider.castShadow = true
+    scene.add(divider)
+  }
+
+  // Area rug under sofa
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(2000, 1600), mat(0x2a2a44, 0.95))
+  rug.rotation.x = -Math.PI / 2
+  rug.position.set(-1800, 2, 1800)
+  rug.receiveShadow = true
+  scene.add(rug)
 }
 
 const rebuildEntityMeshes = () => {
@@ -384,10 +514,10 @@ const onCanvasClick = (event) => {
     const mesh = intersects[0].object
     const { entity_id, mapping, type } = mesh.userData
 
-    if (editMode) {
+    if (editMode.value) {
       // Start dragging
       draggingEntity.value = mapping
-      controls.enabled = false
+      if (controls) controls.enabled = false
     } else {
       // Toggle
       emit('entity-toggle', { entity_id, type })
@@ -482,6 +612,11 @@ watch(() => props.haEntities, (entities) => {
 watch(() => props.entityMapping, () => {
   rebuildEntityMeshes()
 }, { deep: true })
+
+// Watch editMode: enable/disable controls
+watch(editMode, (val) => {
+  if (controls) controls.enabled = val
+})
 
 onMounted(() => {
   initThree()
