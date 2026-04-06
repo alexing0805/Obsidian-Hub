@@ -228,9 +228,12 @@ def build_ha_summary(entities: list[dict[str, Any]]) -> dict[str, Any]:
             "entity_id": weather_entity.get("entity_id"),
             "state": weather_entity.get("state"),
             "temperature": weather_attrs.get("temperature"),
+            "temperature_high": weather_attrs.get("temperature_high") or (weather_attrs.get("forecast")[0].get("temperature") if weather_attrs.get("forecast") else None),
+            "temperature_low": weather_attrs.get("temperature_low") or (weather_attrs.get("forecast")[0].get("templow") if weather_attrs.get("forecast") else None),
             "humidity": weather_attrs.get("humidity"),
             "precipitation": weather_attrs.get("precipitation"),
             "friendly_name": weather_attrs.get("friendly_name"),
+            "forecast": (weather_attrs.get("forecast")[:3] if weather_attrs.get("forecast") else []),
         }
 
     return summary

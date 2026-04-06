@@ -1,110 +1,89 @@
 <template>
   <div class="p-1 flex-1 flex flex-col min-h-0">
-    <div class="glass-panel rounded-[1.5rem] p-4 card-hover flex-1 flex flex-col min-h-0 relative overflow-hidden group">
+    <div class="glass-panel rounded-[1.5rem] p-3 card-hover flex flex-col min-h-0 relative overflow-hidden group">
       
-      <!-- 动态氛围背光 (减弱) -->
-      <div v-if="playState === 'playing'" 
-        class="absolute -top-10 -right-10 w-32 h-32 bg-cyan-500/5 blur-[60px] rounded-full animate-pulse transition-all duration-1000"></div>
-
-      <div class="flex items-center gap-2 mb-3 relative z-10 shrink-0">
-        <div class="w-2 h-2 rounded-full ring-2 ring-black/20" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
-        <span class="text-[9px] font-black tracking-widest uppercase font-heading" :class="maConnected ? 'text-emerald-400/60' : 'text-red-400/50'">
-          {{ maConnected ? 'ONLINE' : 'OFFLINE' }}
-        </span>
-        <div class="flex-1"></div>
-        <span class="text-[9px] text-white/10 font-bold uppercase tracking-tight truncate max-w-[100px]">{{ queueLabel }}</span>
+      <!-- 1. 顶部：播放器选择 + 状态 -->
+      <div class="flex items-center justify-between gap-2 mb-2 relative z-10 shrink-0">
+        <div class="relative flex-1">
+          <button 
+            class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-left w-full group/btn"
+            @click="showSelector = !showSelector"
+          >
+            <div class="w-1.5 h-1.5 rounded-full" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
+            <span class="text-[10px] font-black text-white/60 uppercase tracking-tighter truncate flex-1">
+              {{ activePlayerName || 'Select Player' }}
+            </span>
+            <span class="text-[8px] text-white/20 group-hover/btn:text-white/40">▼</span>
+          </button>
+          
+          <!-- 内置选择器下拉 -->
+          <div v-if="showSelector" class="absolute left-0 top-full mt-1 w-full z-50 bg-neutral-900/95 backdrop-blur-2xl rounded-xl border border-white/10 shadow-2xl py-1 max-h-[200px] overflow-y-auto animate-fade-in">
+            <div 
+              v-for="p in maState.players || []" :key="p.player_id"
+              class="px-3 py-2 text-[10px] font-bold cursor-pointer hover:bg-white/10 transition-colors"
+              :class="maState.active_player_id === p.player_id ? 'text-cyan-400 bg-cyan-400/10' : 'text-white/60'"
+              @click="onSelectPlayer(p)"
+            >
+              {{ p.friendly_name || p.name }}
+            </div>
+            <div v-if="!(maState.players || []).length" class="px-3 py-2 text-[10px] text-white/30 italic">No players</div>
+          </div>
+        </div>
+        <span class="text-[8px] text-white/10 font-bold uppercase tracking-widest truncate max-w-[60px]">{{ queueLabel }}</span>
       </div>
  
-      <!-- 封面与信息并排 (紧凑布局) -->
-      <div class="flex gap-4 mb-4 shrink-0 px-1">
-        <!-- 封面艺术 -->
-        <div class="w-16 h-16 rounded-xl overflow-hidden relative shadow-lg ring-1 ring-white/10 bg-black/40">
-          <img
-            :src="artworkUrl || fallbackArtwork"
-            alt="Cover"
-            class="w-full h-full object-cover transition-transform duration-700"
-          />
-          <div v-if="playState === 'playing'" class="absolute inset-0 bg-black/20 flex items-center justify-center">
-             <div class="flex gap-[2px] items-end pb-0.5">
-               <span class="w-[2px] h-2 bg-cyan-400 animate-[music-bar_0.8s_infinite]"></span>
-               <span class="w-[2px] h-3 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]"></span>
-               <span class="w-[2px] h-2 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]"></span>
+      <!-- 2. 中间：曲目信息 (横向展示) -->
+      <div class="flex items-center gap-3 mb-3 shrink-0 px-1">
+        <div class="w-10 h-10 rounded-lg overflow-hidden relative shadow-md ring-1 ring-white/10 bg-black/40 shrink-0">
+          <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover" />
+          <div v-if="playState === 'playing'" class="absolute inset-0 bg-black/30 flex items-center justify-center">
+             <div class="flex gap-[1px] items-end pb-0.5">
+               <span class="w-[1.5px] h-1.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]"></span>
+               <span class="w-[1.5px] h-2.5 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]"></span>
+               <span class="w-[1.5px] h-1.5 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]"></span>
              </div>
           </div>
         </div>
-
-        <div class="flex-1 flex flex-col justify-center min-w-0">
-          <h3 class="font-extrabold text-sm leading-tight text-white mb-0.5 font-heading truncate">{{ trackName || 'READY' }}</h3>
-          <p class="text-[10px] font-medium text-cyan-400/60 truncate tracking-wide">{{ artistName || 'Music Assistant' }}</p>
+        <div class="flex-1 min-w-0">
+          <h3 class="font-bold text-[11px] leading-tight text-white truncate font-heading">{{ trackName || 'Ready' }}</h3>
+          <p class="text-[9px] font-medium text-cyan-400/50 truncate tracking-wide">{{ artistName || 'Music Assistant' }}</p>
         </div>
       </div>
  
-      <!-- 进度条 -->
-      <div class="mb-4 px-1 shrink-0">
-        <div
-          class="progress-bar-track w-full h-1.5 bg-white/5 rounded-full cursor-pointer relative"
-          @click="onProgressClick"
-          @mousedown.prevent="onProgressMouseDown"
-        >
-          <div
-            class="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full relative"
-            :style="{ width: progressPercent + '%' }"
-          ></div>
-        </div>
-        <div class="flex justify-between mt-1 px-0.5 text-[8px] font-black text-white/20 tabular-nums">
-          <span>{{ formatTime(currentElapsed) }}</span>
-          <span>{{ formatTime(duration) }}</span>
-        </div>
-      </div>
- 
-      <!-- 控制器 -->
-      <div class="flex items-center justify-between px-2 mb-4 shrink-0">
-        <button class="p-1 text-white/20 hover:text-white transition-all transform active:scale-75" :disabled="!activeQueueId" @click="toggleShuffle">
-          <svg class="w-4 h-4" :class="shuffleOn ? 'text-cyan-400' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
-        </button>
-
-        <div class="flex items-center gap-4">
-          <button class="p-1 text-white/20 hover:text-white transition-all transform active:scale-75" :disabled="!activeQueueId" @click="prevTrack">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
-          </button>
-          
-          <button class="w-10 h-10 flex items-center justify-center bg-white text-black rounded-xl shadow-lg transition-all active:scale-90" 
-            :disabled="!activeQueueId" @click="togglePlay">
-            <svg v-if="playState === 'playing'" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-            <svg v-else class="w-6 h-6 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          </button>
-          
-          <button class="p-1 text-white/20 hover:text-white transition-all transform active:scale-75" :disabled="!activeQueueId" @click="nextTrack">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
-          </button>
+      <!-- 3. 控制与进度 (紧凑集成) -->
+      <div class="space-y-2 mt-auto">
+        <div class="flex items-center gap-3 px-1">
+          <div class="progress-bar-track flex-1 h-1 bg-white/5 rounded-full cursor-pointer relative" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
+            <div class="h-full bg-cyan-400 rounded-full" :style="{ width: progressPercent + '%' }"></div>
+          </div>
+          <span class="text-[8px] font-black text-white/20 tabular-nums w-8 text-right">{{ formatTime(currentElapsed) }}</span>
         </div>
 
-        <button class="p-1 text-white/20 hover:text-white transition-all transform active:scale-75 relative" :disabled="!activeQueueId" @click="cycleRepeat">
-          <svg class="w-4 h-4" :class="repeatMode !== 'off' ? 'text-cyan-400' : ''" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-          <span v-if="repeatMode === 'one'" class="absolute -top-1 -right-1 text-[7px] font-black text-cyan-400">1</span>
-        </button>
-      </div>
- 
-      <!-- 音量控制 -->
-      <div class="flex items-center gap-3 mt-auto bg-black/10 p-2 rounded-xl border border-white/5 shrink-0">
-        <svg class="w-3 h-3 text-white/20 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M3 9v6h4l5 5V4L7 9H3z"/>
-        </svg>
-        <div
-          class="volume-track relative flex-1 h-1.5 bg-white/5 rounded-full cursor-pointer"
-          @click="onVolumeClick"
-          @mousedown.prevent="onVolumeMouseDown"
-        >
-          <div class="h-full bg-white/30 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
+        <div class="flex items-center justify-between px-1">
+          <div class="flex items-center gap-2">
+            <button class="p-1 text-white/20 hover:text-white transition-all active:scale-75" :disabled="!activeQueueId" @click="prevTrack">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+            </button>
+            <button class="w-8 h-8 flex items-center justify-center bg-white text-black rounded-lg shadow-sm transition-all active:scale-90" :disabled="!activeQueueId" @click="togglePlay">
+              <svg v-if="playState === 'playing'" class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <svg v-else class="w-4 h-4 translate-x-[1px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button class="p-1 text-white/20 hover:text-white transition-all active:scale-75" :disabled="!activeQueueId" @click="nextTrack">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+            </button>
+          </div>
+
+          <div class="flex-1 max-w-[80px] flex items-center gap-2 bg-black/10 px-2 py-1 rounded-md border border-white/5">
+            <svg class="w-2.5 h-2.5 text-white/20" fill="currentColor" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3z"/></svg>
+            <div class="volume-track relative flex-1 h-0.5 bg-white/5 rounded-full cursor-pointer" @click="onVolumeClick" @mousedown.prevent="onVolumeMouseDown">
+              <div class="h-full bg-white/20 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
+            </div>
+          </div>
         </div>
-        <span class="text-[9px] font-black text-white/20 w-6 text-right font-heading">{{ displayedVolume }}</span>
+      </div>
+
     </div>
   </div>
-</div>
 </template>
 
 <script setup>
@@ -119,6 +98,20 @@ const props = defineProps({
 
 const fallbackArtwork =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48cmVjdCBmaWxsPSIjMWUyOTNiIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNGI1NTYzIiBmb250LXNpemU9IjQwIj7imao8L3RleHQ+PC9zdmc+'
+ 
+const emit = defineEmits(['select-player'])
+
+const showSelector = ref(false)
+const activePlayerName = computed(() => {
+  if (!props.maState?.active_player_id) return 'Select Player'
+  const p = (props.maState.players || []).find(p => p.player_id === props.maState.active_player_id)
+  return p ? (p.friendly_name || p.name) : 'Select Player'
+})
+
+const onSelectPlayer = (player) => {
+  showSelector.value = false
+  emit('select-player', player)
+}
 
 const activeQueueId = ref(null)
 const activePlayerId = ref(null)
