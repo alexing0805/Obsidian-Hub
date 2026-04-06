@@ -851,6 +851,10 @@ DEFAULT_SETTINGS = {
         "music": True,
     },
     "weather_entity_id": "",
+    "selected_light_entities": [],
+    "selected_climate_entities": [],
+    "selected_battery_entities": [],
+    "selected_offline_entities": [],
 }
 
 def load_settings() -> dict[str, Any]:

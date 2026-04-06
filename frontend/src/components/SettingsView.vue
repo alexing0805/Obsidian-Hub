@@ -116,6 +116,76 @@
           <div v-if="!weatherEntities.length" class="text-xs text-white/30 mt-2">未检测到天气实体，请先连接 HA</div>
         </div>
 
+        <!-- 灯光实体选择 -->
+        <div class="glass-effect rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-medium">💡 灯光快捷显示</div>
+            <label class="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" v-model="selectAllLights" class="w-3.5 h-3.5 rounded accent-yellow-400" @change="toggleAllLights" />
+              <span class="text-white/50">全部</span>
+            </label>
+          </div>
+          <div class="space-y-1 max-h-40 overflow-y-auto">
+            <label v-for="light in allLights" :key="light.entity_id"
+              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer">
+              <input type="checkbox" :value="light.entity_id" v-model="localSettings.selected_light_entities"
+                class="w-3.5 h-3.5 rounded accent-yellow-400" @change="markDirty" />
+              <span class="text-xs text-white/70 truncate">{{ light.attributes?.friendly_name || light.entity_id }}</span>
+            </label>
+          </div>
+          <div v-if="!allLights.length" class="text-xs text-white/30 mt-2">未检测到灯光设备</div>
+        </div>
+
+        <!-- 空调实体选择 -->
+        <div class="glass-effect rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <div class="text-sm font-medium">❄️ 空调快捷显示</div>
+            <label class="flex items-center gap-2 text-xs cursor-pointer">
+              <input type="checkbox" v-model="selectAllClimates" class="w-3.5 h-3.5 rounded accent-blue-400" @change="toggleAllClimates" />
+              <span class="text-white/50">全部</span>
+            </label>
+          </div>
+          <div class="space-y-1 max-h-40 overflow-y-auto">
+            <label v-for="climate in allClimates" :key="climate.entity_id"
+              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer">
+              <input type="checkbox" :value="climate.entity_id" v-model="localSettings.selected_climate_entities"
+                class="w-3.5 h-3.5 rounded accent-blue-400" @change="markDirty" />
+              <span class="text-xs text-white/70 truncate">{{ climate.attributes?.friendly_name || climate.entity_id }}</span>
+            </label>
+          </div>
+          <div v-if="!allClimates.length" class="text-xs text-white/30 mt-2">未检测到空调设备</div>
+        </div>
+
+        <!-- 低电量/离线实体选择 -->
+        <div class="glass-effect rounded-xl p-4">
+          <div class="text-sm font-medium mb-3">🔋 低电量 / 📡 离线 监控范围</div>
+          <div class="text-xs text-white/40 mb-2">选择要监控哪些实体（留空则全部监控）</div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <div class="text-xs text-white/40 mb-1">低电量实体</div>
+              <div class="space-y-1 max-h-32 overflow-y-auto">
+                <label v-for="b in batteryEntities" :key="b.entity_id"
+                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer">
+                  <input type="checkbox" :value="b.entity_id" v-model="localSettings.selected_battery_entities"
+                    class="w-3 h-3 rounded accent-red-400" @change="markDirty" />
+                  <span class="text-xs text-white/60 truncate">{{ b.attributes?.friendly_name || b.entity_id }}</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <div class="text-xs text-white/40 mb-1">离线设备</div>
+              <div class="space-y-1 max-h-32 overflow-y-auto">
+                <label v-for="e in allEntities" :key="e.entity_id"
+                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer">
+                  <input type="checkbox" :value="e.entity_id" v-model="localSettings.selected_offline_entities"
+                    class="w-3 h-3 rounded accent-orange-400" @change="markDirty" />
+                  <span class="text-xs text-white/60 truncate">{{ e.attributes?.friendly_name || e.entity_id }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 侧边栏开关 -->
         <div class="glass-effect rounded-xl p-4">
           <div class="flex items-center justify-between">
@@ -279,11 +349,25 @@ const defaultSettings = () => ({
     battery: true, offline: true, music: true
   },
   weather_entity_id: '',
+  selected_light_entities: [],
+  selected_climate_entities: [],
+  selected_battery_entities: [],
+  selected_offline_entities: [],
 })
 
 const localSettings = ref(defaultSettings())
+const selectAllLights = ref(false)
+const selectAllClimates = ref(false)
 
 const allLights = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('light.')))
+const allClimates = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('climate.')))
+const batteryEntities = computed(() =>
+  props.haEntities.filter(e => {
+    const a = e.attributes || {}
+    return a.device_class === 'battery'
+  })
+)
+const allEntities = computed(() => props.haEntities)
 const weatherEntities = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('weather.')))
 
 const haConnectedText = computed(() => props.haConnected ? '已连接' : '未连接')
@@ -309,6 +393,20 @@ const systemInfo = computed(() => ({
 }))
 
 const markDirty = () => { isDirty.value = true }
+
+const toggleAllLights = () => {
+  localSettings.value.selected_light_entities = selectAllLights.value
+    ? allLights.value.map(e => e.entity_id)
+    : []
+  markDirty()
+}
+
+const toggleAllClimates = () => {
+  localSettings.value.selected_climate_entities = selectAllClimates.value
+    ? allClimates.value.map(e => e.entity_id)
+    : []
+  markDirty()
+}
 
 const saveSettings = async () => {
   saving.value = true
@@ -367,6 +465,10 @@ const loadSettings = async () => {
         clock_24h: s.clock_24h !== undefined ? s.clock_24h : true,
         sidebar_widgets: s.sidebar_widgets || { weather: true, stats: true, lights: true, climate: true, battery: true, offline: true, music: true },
         weather_entity_id: s.weather_entity_id || '',
+        selected_light_entities: s.selected_light_entities || [],
+        selected_climate_entities: s.selected_climate_entities || [],
+        selected_battery_entities: s.selected_battery_entities || [],
+        selected_offline_entities: s.selected_offline_entities || [],
       }
     }
   } catch (e) {

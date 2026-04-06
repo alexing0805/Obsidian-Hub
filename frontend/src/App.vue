@@ -51,19 +51,46 @@
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
       <div class="flex-1 p-4 md:p-6 overflow-hidden">
-        <MainContentView
-          :current-view="currentView"
-          :ha-entities="haEntities"
-          :ma-state="maState"
-          :display-temperature="displayTemperature"
-          :display-humidity="displayHumidity"
-          :weather-entity-id="currentSettings.weather_entity_id || ''"
-          :light-positions="lightPositions"
-          @set-view="currentView = $event"
-          @toggle-light="toggleLight"
-          @climate-temp="onClimateTemp"
-          @climate-mode="onClimateMode"
-        />
+        <div class="w-full h-full rounded-2xl glass-effect relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-slate-900 to-slate-950">
+            <svg class="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+              <rect x="50" y="50" width="700" height="500" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="4"/>
+              <rect x="60" y="60" width="250" height="180" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
+              <rect x="490" y="60" width="250" height="180" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
+              <rect x="60" y="260" width="680" height="280" fill="rgba(20,20,30,0.8)" stroke="rgba(255,255,255,0.15)" stroke-width="2" rx="8"/>
+              <g>
+                <circle
+                  v-for="(light, i) in floorLights"
+                  :key="light.entity_id"
+                  :cx="lightPositions[i][0]"
+                  :cy="lightPositions[i][1]"
+                  r="11"
+                  :fill="light.state === 'on' ? '#fbbf24' : 'rgba(255,255,255,0.3)'"
+                  class="light-dot"
+                  :style="light.state === 'on' ? 'filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.65));' : ''"
+                  @click="toggleLight(light)"
+                />
+              </g>
+            </svg>
+          </div>
+          <div class="absolute top-4 left-4 flex gap-3">
+            <div class="glass-effect rounded-xl px-4 py-2 text-xs">
+              <span class="text-white/60">温度</span>
+              <span class="text-white font-bold ml-2">{{ displayTemperature }}</span>
+            </div>
+            <div class="glass-effect rounded-xl px-4 py-2 text-xs">
+              <span class="text-white/60">湿度</span>
+              <span class="text-white font-bold ml-2">{{ displayHumidity }}</span>
+            </div>
+          </div>
+          <div class="absolute bottom-4 left-4 right-4">
+            <div class="glass-effect rounded-xl px-4 py-2 text-xs text-white/70 truncate">
+              <span class="text-white/40 mr-2">灯光映射:</span>
+              <span v-if="floorLights.length">{{ floorLights.map((item) => item.attributes?.friendly_name || item.entity_id).join(' / ') }}</span>
+              <span v-else>暂无可控灯光</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 右侧边栏 -->
@@ -91,11 +118,23 @@
             :current-date="currentDate"
             :weather-entity-id="currentSettings.weather_entity_id || ''"
             :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
-            @set-view="currentView = $event"
+            @open="activeDetail = $event"
           />
         </template>
       </aside>
     </main>
+
+    <!-- 详情弹窗 -->
+    <DetailOverlay
+      v-if="activeDetail"
+      :type="activeDetail"
+      :ha-entities="haEntities"
+      :ma-state="maState"
+      :weather-entity-id="currentSettings.weather_entity_id || ''"
+      @close="activeDetail = null"
+      @toggle-light="toggleLight"
+      @climate-action="onClimateAction"
+    />
 
     <!-- 底部状态栏 -->
     <div class="fixed bottom-0 left-0 right-0 glass-effect border-t border-white/10 py-2 px-4 md:px-6">
@@ -117,7 +156,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
 import SettingsView from './components/SettingsView.vue'
 import SidebarWidgets from './components/SidebarWidgets.vue'
-import MainContentView from './components/MainContentView.vue'
+import DetailOverlay from './components/DetailOverlay.vue'
 
 const mainTabs = [
   { id: 'overview', label: '总览', icon: '🏠' },
@@ -140,7 +179,7 @@ const defaultSidebarWidgets = {
   weather: true, stats: true, lights: true, climate: true,
   battery: true, offline: true, music: true
 }
-const currentView = ref('overview')
+const activeDetail = ref(null)
 const summary = ref({
   lights_total: 0,
   lights_on: 0,
@@ -238,6 +277,26 @@ const onClimateMode = async ({ entity, mode }) => {
     })
   } catch (e) {
     console.error('Climate mode failed:', e)
+  }
+}
+
+const onClimateAction = async ({ entity, action, value }) => {
+  const serviceMap = {
+    temp: { service: 'set_temperature', data: { temperature: parseFloat(value) } },
+    mode: { service: 'set_hvac_mode', data: { hvac_mode: value } },
+    fan: { service: 'set_fan_mode', data: { fan_mode: value } },
+    swing: { service: 'set_swing_mode', data: { swing_mode: value } },
+  }
+  const cfg = serviceMap[action]
+  if (!cfg) return
+  try {
+    await fetch('/api/ha/service', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domain: 'climate', service: cfg.service, entity_id: entity.entity_id, service_data: cfg.data })
+    })
+  } catch (e) {
+    console.error('Climate action failed:', e)
   }
 }
 
