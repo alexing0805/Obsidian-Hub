@@ -4,8 +4,16 @@
 
     <!-- 拖拽中的实体信息 -->
     <div v-if="draggingEntity"
-      class="absolute top-3 left-3 glass-effect rounded-lg px-3 py-1.5 text-xs text-white/70">
-      拖拽中: {{ draggingEntity.label || draggingEntity.entity_id }}
+      class="absolute top-3 left-3 glass-effect rounded-xl px-4 py-3 text-xs w-56">
+      <div class="text-white/70 mb-2 font-medium">拖拽中: {{ draggingEntity.label || draggingEntity.entity_id }}</div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-white/40 shrink-0">高度 Z:</span>
+        <input type="range" min="0" max="800" step="10"
+          :value="Math.round((draggingEntity.z || 0.5) * 1000)"
+          class="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
+          @input="onHeightChange" />
+        <span class="text-cyan-300 w-10 text-right">{{ Math.round((draggingEntity.z || 0.5) * 1000) }}</span>
+      </div>
     </div>
 
     <!-- 编辑模式开关 -->
@@ -409,8 +417,9 @@ const createEntityMesh = (entity, mapping) => {
     })
   }
 
+  const entityZ = (mapping.z !== undefined ? mapping.z : 0.5) * 1000
   const mesh = new THREE.Mesh(geometry, material)
-  mesh.position.set(wx, geometry.parameters?.height ? geometry.parameters.height / 2 : 30, wz)
+  mesh.position.set(wx, entityZ + (geometry.parameters?.height ? geometry.parameters.height / 2 : 30), wz)
   mesh.castShadow = true
   mesh.receiveShadow = true
   mesh.userData = { entity_id: entity.entity_id, mapping, type }
@@ -435,7 +444,7 @@ const createEntityMesh = (entity, mapping) => {
   // Point light for lights
   if (type === '灯' && isOn) {
     const pl = new THREE.PointLight(0xffdd44, 3, 1500, 1.5)
-    pl.position.set(wx, 400, wz)
+    pl.position.set(wx, entityZ + 500, wz)
     pl.castShadow = false
     scene.add(pl)
     pointLights[entity.entity_id] = pl
@@ -484,7 +493,7 @@ const updateEntityState = (entity_id) => {
     } else if (isOn) {
       const { x: wx, z: wz } = toWorld(mapping.x, mapping.y)
       const pl = new THREE.PointLight(0xffdd44, 3, 1500, 1.5)
-      pl.position.set(wx, 400, wz)
+      pl.position.set(wx, entityZ + 500, wz)
       scene.add(pl)
       pointLights[entity_id] = pl
     }
@@ -554,10 +563,20 @@ const onMouseMove = (event) => {
   }
 }
 
+const onHeightChange = (event) => {
+  if (!draggingEntity.value) return
+  const z = parseInt(event.target.value) / 1000
+  draggingEntity.value = { ...draggingEntity.value, z }
+  const entry = entityMeshes[draggingEntity.value.entity_id]
+  if (entry) {
+    entry.mesh.position.y = z
+  }
+}
+
 const onMouseUp = () => {
   if (draggingEntity.value) {
     draggingEntity.value = null
-    controls.enabled = true
+    if (controls) controls.enabled = editMode.value
   }
 }
 
