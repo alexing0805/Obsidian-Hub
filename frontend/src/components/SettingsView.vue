@@ -222,16 +222,19 @@
           <div class="text-sm font-medium mb-2">🗺️ 3D 视图实体映射</div>
           <div class="text-xs text-white/40 mb-3">拖拽编辑模式下可在视图里自由放置位置，点击切换状态</div>
           <div class="text-xs text-white/40 mb-2">已映射实体（点击删除）：</div>
-          <div class="space-y-1 mb-3">
-            <div v-for="mapping in localSettings.entity_mapping" :key="mapping.entity_id"
-              class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
-              <span>{{ entityTypeIcon(mapping.type) }}</span>
-              <span class="flex-1 text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</span>
-              <span class="text-xs text-white/30">{{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%</span>
-              <button class="text-xs text-red-400 hover:text-red-300 px-2 py-0.5 rounded border border-red-500/20"
-                @click="removeMapping(mapping.entity_id)">删除</button>
+          <div class="space-y-4 mb-3">
+            <div v-for="(mappings, type) in groupedMappings" :key="type" class="space-y-2">
+              <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">{{ type }}</div>
+              <div v-for="mapping in mappings" :key="mapping.entity_id"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+                <span>{{ entityTypeIcon(mapping.type) }}</span>
+                <span class="flex-1 text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</span>
+                <span class="text-[10px] font-bold tabular-nums text-white/30">{{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%</span>
+                <button class="text-[10px] font-bold text-red-400 hover:text-white hover:bg-red-500/40 px-2 py-1 rounded border border-red-500/20 transition-all"
+                  @click="removeMapping(mapping.entity_id)">删除</button>
+              </div>
             </div>
-            <div v-if="!localSettings.entity_mapping?.length" class="text-xs text-white/30 text-center py-2">
+            <div v-if="!localSettings.entity_mapping?.length" class="text-xs text-white/30 text-center py-4 bg-white/5 rounded-xl border border-dashed border-white/10">
               暂无映射实体。在主视图里点击「+ 添加实体到视图」
             </div>
           </div>
@@ -364,6 +367,16 @@ const batteryEntities = computed(() =>
 )
 const allEntities = computed(() => props.haEntities)
 const weatherEntities = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('weather.')))
+const groupedMappings = computed(() => {
+  const groups = {}
+  const items = localSettings.value.entity_mapping || []
+  items.forEach(item => {
+    const type = item.type || '其他'
+    if (!groups[type]) groups[type] = []
+    groups[type].push(item)
+  })
+  return groups
+})
 
 const haConnectedText = computed(() => props.haConnected ? '已连接' : '未连接')
 const maConnectedText = computed(() => props.maConnected ? '已连接' : '未连接')

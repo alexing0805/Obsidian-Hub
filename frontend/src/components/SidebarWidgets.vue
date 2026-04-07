@@ -24,9 +24,9 @@
         </div>
         <div class="flex flex-col items-end gap-1">
           <div class="flex gap-1.5 text-xs font-black tabular-nums">
-             <span class="text-blue-400">{{ weatherLow }}°</span>
+             <span class="text-blue-400">{{ weatherLow }}{{ weatherLow !== '--' ? '°' : '' }}</span>
              <span class="text-white/20">/</span>
-             <span class="text-red-400">{{ weatherHigh }}°</span>
+             <span class="text-red-400">{{ weatherHigh }}{{ weatherHigh !== '--' ? '°' : '' }}</span>
           </div>
           <div v-if="weatherHumidity !== '--'" class="text-[9px] font-bold text-white/20 uppercase tracking-widest">湿度 {{ weatherHumidity }}</div>
         </div>
@@ -105,12 +105,14 @@ const weatherHumidity = computed(() => {
   return v !== undefined && v !== null ? `${Math.round(Number(v))}%` : '--'
 })
 const weatherHigh = computed(() => {
-  const val = weatherData.value?.temperature_high || weatherEntity.value?.attributes?.forecast?.[0]?.temperature || 0
-  return val !== '--' ? `${Math.round(Number(val))}°` : '--'
+  const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
+  const val = fc0?.temperature ?? fc0?.temp_high ?? fc0?.max_temp ?? weatherEntity.value?.attributes?.temp_high ?? '--'
+  return val !== '--' ? Math.round(Number(val)) : '--'
 })
 const weatherLow = computed(() => {
-  const val = weatherData.value?.temperature_low || weatherEntity.value?.attributes?.forecast?.[0]?.templow || 0
-  return val !== '--' ? `${Math.round(Number(val))}°` : '--'
+  const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
+  const val = fc0?.templow ?? fc0?.temperature_low ?? fc0?.min_temp ?? weatherEntity.value?.attributes?.temp_low ?? '--'
+  return val !== '--' ? Math.round(Number(val)) : '--'
 })
 
 const getFcEmoji = (cond) => {
