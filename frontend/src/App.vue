@@ -42,7 +42,7 @@
     <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
-      <div class="flex-1 p-4 md:p-6 overflow-hidden bg-black/20">
+      <div class="flex-1 p-2 md:p-3 overflow-hidden bg-black/20">
         <div class="w-full h-full rounded-[2.5rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
           <transition name="fade" mode="out-in">
             <component

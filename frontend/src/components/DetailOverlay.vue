@@ -2,7 +2,8 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-8" @click.self="$emit('close')">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-md transition-all duration-500" @click="$emit('close')"></div>
 
-    <div class="relative glass-panel rounded-[2.5rem] w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in">
+    <div class="relative glass-panel rounded-[2.5rem] w-full flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in"
+      :class="type === 'weather' ? 'max-w-2xl max-h-[80vh]' : 'max-w-4xl max-h-[88vh]'">
 
       <!-- 标题栏 -->
       <div class="flex items-center justify-between px-8 py-5 border-b border-white/5 shrink-0 bg-white/5">
@@ -159,11 +160,11 @@
         <!-- 天气详情 -->
         <div v-if="type === 'weather'">
           <div v-if="weatherEntity" class="space-y-8 py-4 animate-fade-in relative z-10">
-            <div class="text-center py-8">
-              <div class="text-[7rem] mb-6 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
-              <div class="text-6xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
-              <div class="text-3xl font-black text-cyan-400 mt-3 uppercase tracking-[0.4em]">{{ weatherText }}</div>
-              <div class="text-sm font-bold text-white/20 mt-2 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
+            <div class="text-center py-4">
+              <div class="text-5xl mb-4 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
+              <div class="text-4xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
+              <div class="text-xl font-black text-cyan-400 mt-2 uppercase tracking-[0.4em]">{{ weatherText }}</div>
+              <div class="text-[10px] font-bold text-white/20 mt-1 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
             </div>
             <div class="grid grid-cols-4 gap-4 px-4">
               <div v-for="attr in weatherAttrs" :key="attr.key"
@@ -172,15 +173,15 @@
                 <div class="text-xl font-black text-white/90">{{ attr.value }}</div>
               </div>
             </div>
-            <div v-if="sidebarForecast.length" class="space-y-4 px-4 pt-4 border-t border-white/5">
-              <div class="text-xs font-black text-white/20 uppercase tracking-[0.4em] ml-2">7天预报</div>
-              <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hidden">
+            <div v-if="sidebarForecast.length" class="space-y-3 px-2 pt-4 border-t border-white/5">
+              <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7日天气预报</div>
+              <div class="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hidden">
                 <div v-for="(fc, idx) in sidebarForecast" :key="idx"
-                  class="flex-shrink-0 w-36 glass-panel p-5 rounded-[2rem] flex flex-col items-center border border-white/5">
-                  <span class="text-xs font-black text-white/30 uppercase mb-3">{{ fc.weekday }}</span>
-                  <span class="text-4xl mb-3 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
+                  class="flex-shrink-0 w-28 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5">
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-2">{{ fc.weekday }}</span>
+                  <span class="text-3xl mb-2 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
                   <div class="flex flex-col items-center">
-                    <span class="text-lg font-black text-white">{{ fc.temp }}°</span>
+                    <span class="text-base font-black text-white">{{ fc.temp }}°</span>
                   </div>
                 </div>
               </div>
@@ -341,7 +342,7 @@ const getFcEmoji = (cond) => {
 
 const sidebarForecast = computed(() => {
   const fc = props.weatherForecast || []
-  return fc.slice(1, 8).map(item => {
+  return fc.slice(0, 10).map(item => {
     try {
       const dt = new Date(item.datetime)
       return {

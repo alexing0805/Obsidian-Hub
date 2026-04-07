@@ -34,7 +34,13 @@
             class="w-8 h-8 transition-colors duration-300"
             :class="entityState(mapping.entity_id) === 'on' ? (mapping.type === '灯' ? 'text-yellow-300 glow-yellow' : 'text-cyan-300 glow-blue') : 'text-white/40'" />
 
-          <div v-if="entityState(mapping.entity_id) === 'on'"
+          <!-- 状态气泡/数值 -->
+          <div v-if="entityValue(mapping.entity_id)"
+            class="absolute -top-3 -right-3 px-2 py-1 bg-cyan-500 text-[10px] font-black text-white rounded-full shadow-lg border border-white/20 select-none z-10">
+            {{ entityValue(mapping.entity_id) }}
+          </div>
+
+          <div v-if="entityState(mapping.entity_id) === 'on' && mapping.type === '灯'"
             class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] bg-white animate-pulse">
           </div>
         </div>
@@ -249,6 +255,29 @@ const entityState = (entity_id) => {
   return e?.state || 'off'
 }
 
+const entityValue = (entity_id) => {
+  const e = props.haEntities.find(e => e.entity_id === entity_id)
+  if (!e) return null
+  if (entity_id.startsWith('climate.')) {
+    return (e.attributes?.current_temperature || e.state) + '°'
+  }
+  if (entity_id.startsWith('sensor.')) {
+    const val = e.state
+    const unit = e.attributes?.unit_of_measurement || ''
+    return val !== 'unknown' ? `${val}${unit}` : null
+  }
+  if (entity_id.startsWith('cover.')) {
+    if (e.state === 'open') return '开'
+    if (e.state === 'closed') return '关'
+    return e.state
+  }
+  if (e.state === 'on' && entity_id.startsWith('light.')) {
+    const br = e.attributes?.brightness
+    if (br) return Math.round((br / 255) * 100) + '%'
+  }
+  return null
+}
+
 const shortId = (id) => {
   const parts = id.split('.')
   return parts.length >= 2 ? parts[1].toUpperCase() : id
@@ -258,7 +287,7 @@ const bgStyle = computed(() => {
   if (localBgImage.value) {
     return {
       backgroundImage: `url(${localBgImage.value})`,
-      backgroundSize: 'cover',
+      backgroundSize: 'contain',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
     }
