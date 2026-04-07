@@ -3,6 +3,8 @@
 /* Noto Sans SC: 400 完整 + chinese-simplified 补全700（包含全部中文字符） */
 @import '@fontsource/noto-sans-sc/400.css';
 @import '@fontsource/noto-sans-sc/chinese-simplified-700.css';
+/* Emoji 字体 */
+@import '@fontsource/noto-color-emoji';
 
 @tailwind base;
 @tailwind components;
@@ -39,6 +41,11 @@ h1, h2, h3, .font-heading {
 /* 确保所有文字默认使用支持中文的字体栈 */
 body, button, input, select, textarea {
   font-family: 'Noto Sans SC', 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+}
+
+/* Emoji fallback: noto-color-emoji 放在最后，覆盖所有剩余 emoji 字符 */
+.emoji, [class*="emoji"] {
+  font-family: 'Noto Color Emoji', 'Noto Sans SC', 'Outfit', sans-serif !important;
 }
 
 /* 高级玻璃拟态 */
