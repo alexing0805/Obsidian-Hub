@@ -1,6 +1,8 @@
 /* 字体由 @fontsource 包本地提供，无需 CDN */
 @import '@fontsource/outfit';
-@import '@fontsource/noto-sans-sc';
+/* Noto Sans SC: 400 完整 + chinese-simplified 补全700（包含全部中文字符） */
+@import '@fontsource/noto-sans-sc/400.css';
+@import '@fontsource/noto-sans-sc/chinese-simplified-700.css';
 
 @tailwind base;
 @tailwind components;
@@ -31,7 +33,12 @@ body {
 }
 
 h1, h2, h3, .font-heading {
-  font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  font-family: 'Outfit', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+/* 确保所有文字默认使用支持中文的字体栈 */
+body, button, input, select, textarea {
+  font-family: 'Noto Sans SC', 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
 /* 高级玻璃拟态 */
