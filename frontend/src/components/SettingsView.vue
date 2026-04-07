@@ -1,5 +1,5 @@
 <template>
-  <div class="settings-view flex flex-col h-full">
+  <div class="settings-view flex flex-col min-h-0 h-full">
 
     <!-- 顶部 Tab 导航 -->
     <div class="shrink-0 px-4 pt-4 pb-2 flex items-center gap-1 border-b border-white/10">

@@ -104,8 +104,14 @@ const weatherHumidity = computed(() => {
   const v = weatherData.value?.humidity || weatherEntity.value?.attributes?.humidity
   return v !== undefined && v !== null ? `${Math.round(Number(v))}%` : '--'
 })
-const weatherHigh = computed(() => weatherData.value?.temperature_high || '--')
-const weatherLow = computed(() => weatherData.value?.temperature_low || '--')
+const weatherHigh = computed(() => {
+  const val = weatherData.value?.temperature_high || weatherEntity.value?.attributes?.forecast?.[0]?.temperature || 0
+  return val !== '--' ? `${Math.round(Number(val))}°` : '--'
+})
+const weatherLow = computed(() => {
+  const val = weatherData.value?.temperature_low || weatherEntity.value?.attributes?.forecast?.[0]?.templow || 0
+  return val !== '--' ? `${Math.round(Number(val))}°` : '--'
+})
 
 const getFcEmoji = (cond) => {
   const s = (cond || '').toLowerCase()
