@@ -42,7 +42,7 @@
     <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
-      <div class="flex-1 p-2 md:p-3 overflow-hidden bg-black/20">
+      <div class="flex-1 p-1 overflow-hidden bg-black/20">
         <div class="w-full h-full rounded-[2.5rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
           <transition name="fade" mode="out-in">
             <component
@@ -66,7 +66,7 @@
 
       <!-- 右侧边栏 -->
       <aside v-if="showSidebar || currentTab === 'settings'"
-        class="w-80 glass-panel flex flex-col border-l border-white/5 shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
+        class="w-64 glass-panel flex flex-col border-l border-white/5 shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
         :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
         <transition name="fade" mode="out-in">
           <SettingsView

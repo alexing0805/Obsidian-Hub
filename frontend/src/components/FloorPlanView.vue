@@ -30,7 +30,7 @@
         <!-- 图标容器 -->
         <div class="relative w-16 h-16 flex items-center justify-center rounded-2xl glass-panel transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
           :class="entityState(mapping.entity_id) === 'on' ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5'">
-          <component :is="getIconComponent(mapping.type)"
+          <component :is="getIconComponent(mapping.type, mapping.entity_id)"
             class="w-8 h-8 transition-colors duration-300"
             :class="entityState(mapping.entity_id) === 'on' ? (mapping.type === '灯' ? 'text-yellow-300 glow-yellow' : 'text-cyan-300 glow-blue') : 'text-white/40'" />
 
@@ -57,7 +57,7 @@
         :style="previewStyle"
       >
         <div class="w-16 h-16 flex items-center justify-center rounded-2xl glass-panel border-dashed border-cyan-400/50">
-          <component :is="getIconComponent(dragMapping?.type)" class="w-8 h-8 text-cyan-400" />
+          <component :is="getIconComponent(dragMapping?.type, dragMapping?.entity_id)" class="w-8 h-8 text-cyan-400" />
         </div>
       </div>
     </div>
@@ -201,7 +201,8 @@ const addEntityToPlan = (entity) => {
   const type = entity.entity_id.startsWith('light.') ? '灯' :
                entity.entity_id.startsWith('climate.') ? '空调' :
                entity.entity_id.startsWith('switch.') ? '开关' :
-               entity.entity_id.startsWith('sensor.') ? '传感器' : '其他'
+               entity.entity_id.startsWith('sensor.') ? '传感器' :
+               entity.entity_id.startsWith('cover.') ? '窗帘' : '其他'
 
   const newMapping = {
     entity_id: entity.entity_id,
@@ -251,8 +252,10 @@ const IconOther = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: '
   h('path', { d: 'm3.3 7 8.7 5 8.7-5M12 22V12' })
 ])
 
-const getIconComponent = (type) => {
-  return { '灯': IconLight, '空调': IconClimate, '开关': IconSwitch, '传感器': IconSensor, '窗帘': IconCover }[type] || IconOther
+const getIconComponent = (type, entity_id = '') => {
+  if (entity_id.startsWith('cover.')) return IconCover
+  const map = { '灯': IconLight, '空调': IconClimate, '开关': IconSwitch, '传感器': IconSensor, '窗帘': IconCover }
+  return map[type] || IconOther
 }
 
 const entityState = (entity_id) => {
@@ -334,8 +337,13 @@ const onIconClick = (mapping) => {
     '传感器': 'sensor',
     '窗帘': 'cover'
   }
-  if (complexTypes[mapping.type]) {
-    emit('open', { type: complexTypes[mapping.type], entityId: mapping.entity_id })
+  let targetType = complexTypes[mapping.type]
+  if (!targetType && mapping.entity_id.startsWith('cover.')) targetType = 'cover'
+  if (!targetType && mapping.entity_id.startsWith('climate.')) targetType = 'climate'
+  if (!targetType && mapping.entity_id.startsWith('sensor.')) targetType = 'sensor'
+
+  if (targetType) {
+    emit('open', { type: targetType, entityId: mapping.entity_id })
   } else {
     const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
     emit('entity-toggle', entity || mapping)
