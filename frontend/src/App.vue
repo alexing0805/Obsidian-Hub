@@ -79,7 +79,7 @@
  
       <!-- 右侧边栏 (宽度回缩) -->
       <aside v-if="showSidebar || currentTab === 'settings'"
-        class="w-80 glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_40px_rgba(0,0,0,0.4)]"
+        class="w-80 glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
         :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
         <div class="flex-1 overflow-hidden">
           <transition name="fade" mode="out-in">

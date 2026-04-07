@@ -1,6 +1,6 @@
 <template>
-  <div class="p-1 flex flex-col min-h-0 h-full">
-    <div class="glass-panel rounded-[2rem] p-4 flex flex-col h-full min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+  <div class="p-1 flex flex-col min-h-0 h-full overflow-y-auto">
+    <div class="glass-panel rounded-[2rem] p-4 flex flex-col min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
 
       <!-- 动态氛围背景 -->
       <div v-if="playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse transition-opacity duration-1000"></div>
@@ -36,9 +36,9 @@
         <span class="text-[9px] text-white/20 font-black uppercase tracking-[0.1em] truncate max-w-[50px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5 shrink-0">{{ queueLabel }}</span>
       </div>
 
-      <!-- 2. 封面图（放大） -->
+      <!-- 2. 封面图（响应式，最大144px） -->
       <div class="flex justify-center mb-4 shrink-0">
-        <div class="w-36 h-36 rounded-[1.5rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
+        <div class="w-full max-w-[144px] aspect-square rounded-[1.5rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
           <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover transition-opacity duration-700" :class="artworkUrl ? 'opacity-100' : 'opacity-20'" />
           <div v-if="playState === 'playing'" class="absolute bottom-2 right-2 p-1.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
              <div class="flex gap-0.5 items-end h-3 w-3 justify-center">
