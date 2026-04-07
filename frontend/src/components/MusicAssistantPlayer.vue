@@ -1,6 +1,6 @@
 <template>
   <div class="p-1 flex flex-col min-h-0 h-full overflow-y-auto">
-    <div class="glass-panel rounded-[2rem] p-5 flex flex-col min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+    <div class="glass-panel rounded-[2rem] p-5 flex flex-col h-full min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
 
       <div v-if="playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse transition-opacity duration-1000"></div>
 

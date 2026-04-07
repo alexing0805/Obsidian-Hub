@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden p-5 space-y-3">
+  <div class="flex flex-col h-full overflow-hidden p-5 space-y-3 min-h-0">
 
     <!-- 1. 独立时钟卡片 -->
     <div class="glass-panel rounded-[2rem] p-5 relative overflow-hidden shrink-0 shadow-xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
@@ -57,8 +57,8 @@
     </div>
 
     <!-- 4. 音乐播放器 -->
-    <div v-if="widgets.music" class="flex-1 min-h-0">
-      <MusicAssistantPlayer :ma-state="maState" @select-player="$emit('select-player', $event)" />
+    <div v-if="widgets.music" class="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <MusicAssistantPlayer :ma-state="maState" class="flex-1 min-h-0" @select-player="$emit('select-player', $event)" />
     </div>
 
   </div>

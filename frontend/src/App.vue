@@ -77,37 +77,36 @@
       <aside v-if="showSidebar || currentTab === 'settings'"
         class="w-80 glass-panel flex flex-col border-l border-white/5 shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
         :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
-        <div class="flex-1 overflow-hidden">
-          <transition name="fade" mode="out-in">
-            <SettingsView
-              v-if="currentTab === 'settings'"
-              :ha-entities="haEntities"
-              :ha-connected="haConnected"
-              :ma-connected="maConnected"
-              :ma-state="maState"
-              :system-status="systemStatus"
-              :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
-              :weather-entity-id="currentSettings.weather_entity_id || ''"
-              @save="onSettingsSave"
-              @restart="onSettingsRestart"
-              @toggle-sidebar="showSidebar = $event"
-            />
-            <SidebarWidgets
-              v-else
-              :ha-entities="haEntities"
-              :summary="summary"
-              :ma-state="maState"
-              :current-time="currentTime"
-              :current-date="currentDate"
-              :weather-entity-id="currentSettings.weather_entity_id || ''"
-              :weather-forecast="summary.weather?.forecast || []"
-              :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
-              @open="activeDetail = $event"
-              @toggle-light="onEntityToggle"
-              @select-player="onSwitchPlayer"
-            />
-          </transition>
-        </div>
+        <transition name="fade" mode="out-in">
+          <SettingsView
+            v-if="currentTab === 'settings'"
+            :ha-entities="haEntities"
+            :ha-connected="haConnected"
+            :ma-connected="maConnected"
+            :ma-state="maState"
+            :system-status="systemStatus"
+            :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
+            :weather-entity-id="currentSettings.weather_entity_id || ''"
+            @save="onSettingsSave"
+            @restart="onSettingsRestart"
+            @toggle-sidebar="showSidebar = $event"
+          />
+          <SidebarWidgets
+            v-else
+            :ha-entities="haEntities"
+            :summary="summary"
+            :ma-state="maState"
+            :current-time="currentTime"
+            :current-date="currentDate"
+            :weather-entity-id="currentSettings.weather_entity_id || ''"
+            :weather-forecast="summary.weather?.forecast || []"
+            :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
+            class="flex-1 min-h-0"
+            @open="activeDetail = $event"
+            @toggle-light="onEntityToggle"
+            @select-player="onSwitchPlayer"
+          />
+        </transition>
       </aside>
     </main>
 

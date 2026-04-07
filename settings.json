@@ -1,0 +1,16 @@
+{
+  "enabledPlugins": {
+    "glm-plan-bug@zai-coding-plugins": true,
+    "glm-plan-usage@zai-coding-plugins": true
+  },
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "sk-cp-z9w-CI-iNfYPQTlsrz2x78HuTah9P9BYbguSI2YgrQ1k_qMmQFW_qLJHK0EPbfnIIedFc4ugoK4mFS84gi3Ar2QGUuk_fGEi16A5x-WyjC5CFlstgRWWuIg",
+    "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M2.7",
+    "ANTHROPIC_MODEL": "MiniMax-M2.7",
+    "API_TIMEOUT_MS": "3000000",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
+  }
+}
