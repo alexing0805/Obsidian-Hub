@@ -1,93 +1,91 @@
 <template>
   <div class="p-1 flex flex-col min-h-0 h-full overflow-y-auto">
-    <div class="glass-panel rounded-[2rem] p-4 flex flex-col min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+    <div class="glass-panel rounded-[2rem] p-5 flex flex-col min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
 
-      <!-- 动态氛围背景 -->
       <div v-if="playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse transition-opacity duration-1000"></div>
 
       <!-- 1. 顶部：播放器选择 + 状态 -->
       <div class="flex items-center justify-between gap-3 mb-4 relative z-10 shrink-0">
         <div class="relative flex-1 min-w-0">
           <button
-            class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left w-full group/btn"
+            class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left w-full group/btn"
             @click="showSelector = !showSelector"
           >
-            <div class="w-2 h-2 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)] shrink-0" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
-            <span class="text-[11px] font-black text-white/70 uppercase tracking-tighter truncate flex-1">
-              {{ activePlayerName || 'Select Player' }}
+            <div class="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)] shrink-0" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
+            <span class="text-sm font-bold text-white/70 uppercase tracking-tight truncate flex-1">
+              {{ activePlayerName || '选择播放器' }}
             </span>
-            <span class="text-[8px] text-white/20 group-hover/btn:text-white/40 transition-colors shrink-0">▼</span>
+            <span class="text-xs text-white/20 group-hover/btn:text-white/40 transition-colors shrink-0">▼</span>
           </button>
 
-          <!-- 播放器下拉 -->
-          <div v-if="showSelector" class="absolute left-0 top-full mt-2 w-full z-50 bg-neutral-900/98 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 max-h-[250px] overflow-y-auto animate-fade-in ring-1 ring-white/5">
+          <div v-if="showSelector" class="absolute left-0 top-full mt-2 w-full z-50 bg-neutral-900/98 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 max-h-[280px] overflow-y-auto animate-fade-in ring-1 ring-white/5">
             <div
               v-for="p in maState.players || []" :key="p.player_id"
-              class="px-4 py-2.5 text-[11px] font-bold cursor-pointer hover:bg-white/10 transition-colors flex items-center justify-between"
+              class="px-4 py-3 text-sm font-bold cursor-pointer hover:bg-white/10 transition-colors flex items-center justify-between"
               :class="maState.active_player_id === p.player_id ? 'text-cyan-400 bg-cyan-400/10' : 'text-white/60'"
               @click="onSelectPlayer(p)"
             >
               <span>{{ p.friendly_name || p.name }}</span>
-              <div v-if="p.playback_state === 'playing'" class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></div>
+              <div v-if="p.playback_state === 'playing'" class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
             </div>
-            <div v-if="!(maState.players || []).length" class="px-4 py-3 text-[11px] text-white/30 italic">No players available</div>
+            <div v-if="!(maState.players || []).length" class="px-4 py-3 text-sm text-white/30 italic">No players available</div>
           </div>
         </div>
-        <span class="text-[9px] text-white/20 font-black uppercase tracking-[0.1em] truncate max-w-[50px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5 shrink-0">{{ queueLabel }}</span>
+        <span class="text-xs text-white/20 font-black uppercase tracking-[0.1em] truncate max-w-[60px] bg-white/5 px-2 py-1 rounded-md border border-white/5 shrink-0">{{ queueLabel }}</span>
       </div>
 
-      <!-- 2. 封面图（响应式，最大144px） -->
+      <!-- 2. 封面图（响应式，最大 180px） -->
       <div class="flex justify-center mb-4 shrink-0">
-        <div class="w-full max-w-[144px] aspect-square rounded-[1.5rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
+        <div class="w-full max-w-[180px] aspect-square rounded-[1.5rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
           <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover transition-opacity duration-700" :class="artworkUrl ? 'opacity-100' : 'opacity-20'" />
-          <div v-if="playState === 'playing'" class="absolute bottom-2 right-2 p-1.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
-             <div class="flex gap-0.5 items-end h-3 w-3 justify-center">
-                <span class="w-0.5 h-1.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]"></span>
-                <span class="w-0.5 h-3 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]"></span>
-                <span class="w-0.5 h-2 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]"></span>
+          <div v-if="playState === 'playing'" class="absolute bottom-3 right-3 p-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
+             <div class="flex gap-0.5 items-end h-4 w-4 justify-center">
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]" style="height:30%"></span>
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]" style="height:80%"></span>
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]" style="height:55%"></span>
              </div>
           </div>
         </div>
       </div>
 
       <!-- 3. 曲目信息 -->
-      <div class="text-center mb-4 shrink-0 px-1">
-        <h3 class="font-black text-[13px] leading-tight text-white mb-1 line-clamp-1 tracking-tight group-hover:text-cyan-400 transition-colors">{{ trackName || 'Ready to Play' }}</h3>
-        <p class="text-[10px] font-bold text-white/40 tracking-[0.05em] truncate uppercase">{{ artistName || 'Music Assistant' }}</p>
+      <div class="text-center mb-4 shrink-0 px-2">
+        <h3 class="font-black text-base leading-tight text-white mb-1.5 tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">{{ trackName || 'Ready to Play' }}</h3>
+        <p class="text-xs font-bold text-white/40 tracking-[0.05em] truncate uppercase">{{ artistName || 'Music Assistant' }}</p>
       </div>
 
-      <!-- 4. 进度条（独立一行） -->
-      <div class="flex items-center gap-2 px-1 mb-3 shrink-0">
-        <span class="text-[9px] font-black text-white/30 tabular-nums w-8 shrink-0">{{ formatTime(currentElapsed) }}</span>
-        <div class="progress-bar-track flex-1 h-1.5 bg-white/5 rounded-full cursor-pointer relative hover:h-2 transition-all group/progress" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
+      <!-- 4. 进度条 -->
+      <div class="flex items-center gap-3 px-2 mb-4 shrink-0">
+        <span class="text-xs font-black text-white/30 tabular-nums w-9 shrink-0">{{ formatTime(currentElapsed) }}</span>
+        <div class="progress-bar-track flex-1 h-2 bg-white/5 rounded-full cursor-pointer relative hover:h-2.5 transition-all group/progress" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
           <div class="h-full bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]" :style="{ width: progressPercent + '%' }"></div>
-          <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-cyan-500 shadow-xl opacity-0 group-hover/progress:opacity-100 transition-opacity -ml-1.5" :style="{ left: progressPercent + '%' }"></div>
+          <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-cyan-500 shadow-xl opacity-0 group-hover/progress:opacity-100 transition-opacity -ml-2" :style="{ left: progressPercent + '%' }"></div>
         </div>
-        <span class="text-[9px] font-black text-white/30 tabular-nums w-8 text-right shrink-0">{{ formatTime(duration) }}</span>
+        <span class="text-xs font-black text-white/30 tabular-nums w-9 text-right shrink-0">{{ formatTime(duration) }}</span>
       </div>
 
-      <!-- 5. 播放控制（独立一行，居中） -->
-      <div class="flex items-center justify-center gap-6 mb-3 shrink-0">
+      <!-- 5. 播放控制 -->
+      <div class="flex items-center justify-center gap-8 mb-4 shrink-0">
         <button class="text-white/30 hover:text-white transition-all active:scale-75 disabled:opacity-10" :disabled="!activeQueueId" @click="prevTrack">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+          <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
-        <button class="w-12 h-12 flex items-center justify-center bg-white text-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-10" :disabled="!activeQueueId" @click="togglePlay">
-          <svg v-if="playState === 'playing'" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-          <svg v-else class="w-5 h-5 translate-x-[2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <button class="w-14 h-14 flex items-center justify-center bg-white text-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-10" :disabled="!activeQueueId" @click="togglePlay">
+          <svg v-if="playState === 'playing'" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+          <svg v-else class="w-6 h-6 translate-x-[2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>
         <button class="text-white/30 hover:text-white transition-all active:scale-75 disabled:opacity-10" :disabled="!activeQueueId" @click="nextTrack">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
         </button>
       </div>
 
-      <!-- 6. 音量条（独立一行） -->
-      <div class="flex items-center gap-2 px-3 shrink-0">
-        <svg class="w-3.5 h-3.5 text-white/20 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536l-3.536 3.536L2 20h2.828l3.536-3.536M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <div class="volume-track relative flex-1 h-1 bg-white/5 rounded-full cursor-pointer group/vol" @click="onVolumeClick" @mousedown.prevent="onVolumeMouseDown">
+      <!-- 6. 音量条 -->
+      <div class="flex items-center gap-3 px-4 shrink-0">
+        <svg class="w-4 h-4 text-white/20 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536l-3.536 3.536L2 20h2.828l3.536-3.536M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <div class="volume-track relative flex-1 h-1.5 bg-white/5 rounded-full cursor-pointer group/vol" @click="onVolumeClick" @mousedown.prevent="onVolumeMouseDown">
           <div class="h-full bg-white/40 rounded-full" :style="{ width: displayedVolume + '%' }"></div>
-          <div class="absolute top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full opacity-0 group-hover/vol:opacity-100 transition-opacity -ml-1" :style="{ left: displayedVolume + '%' }"></div>
+          <div class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover/vol:opacity-100 transition-opacity -ml-1.5" :style="{ left: displayedVolume + '%' }"></div>
         </div>
-        <span class="text-[9px] font-black text-white/30 tabular-nums w-6 text-right shrink-0">{{ displayedVolume }}</span>
+        <span class="text-xs font-black text-white/30 tabular-nums w-7 text-right shrink-0">{{ displayedVolume }}</span>
       </div>
 
     </div>
@@ -98,22 +96,19 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  maState: {
-    type: Object,
-    default: () => ({})
-  }
+  maState: { type: Object, default: () => ({}) }
 })
 
 const fallbackArtwork =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48cmVjdCBmaWxsPSIjMWUyOTNiIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjNGI1NTYzIiBmb250LXNpemU9IjQwIj7imao8L3RleHQ+PC9zdmc+'
- 
+
 const emit = defineEmits(['select-player'])
 
 const showSelector = ref(false)
 const activePlayerName = computed(() => {
-  if (!props.maState?.active_player_id) return 'Select Player'
+  if (!props.maState?.active_player_id) return '选择播放器'
   const p = (props.maState.players || []).find(p => p.player_id === props.maState.active_player_id)
-  return p ? (p.friendly_name || p.name) : 'Select Player'
+  return p ? (p.friendly_name || p.name) : '选择播放器'
 })
 
 const onSelectPlayer = (player) => {
@@ -219,7 +214,6 @@ const applyMAState = (state) => {
   if (currentItem) {
     trackName.value = currentItem.media_item?.name || currentItem.name || ''
     artistName.value = currentItem.media_item?.artists?.map((artist) => artist.name).join(', ') || ''
-
     const images = currentItem.media_item?.metadata?.images || []
     const thumb = images.find((image) => image.type === 'thumb') || images[0]
     const path = thumb?.path || ''
@@ -245,9 +239,7 @@ const applyMAState = (state) => {
 
 watch(
   () => props.maState,
-  (state) => {
-    applyMAState(state || {})
-  },
+  (state) => { applyMAState(state || {}) },
   { immediate: true, deep: true }
 )
 
@@ -294,10 +286,7 @@ const prevTrack = () => {
 const seekTo = (position) => {
   if (!activeQueueId.value) return
   const safePosition = Math.max(0, Math.floor(position))
-  sendMACmd('player_queues/seek', {
-    queue_id: activeQueueId.value,
-    position: safePosition
-  })
+  sendMACmd('player_queues/seek', { queue_id: activeQueueId.value, position: safePosition })
 }
 
 const setVolume = (value) => {
@@ -305,32 +294,7 @@ const setVolume = (value) => {
   const safeVolume = Math.max(0, Math.min(100, Math.round(value)))
   volume.value = safeVolume
   dragVolume.value = safeVolume
-  sendMACmd('players/cmd/volume_set', {
-    player_id: activePlayerId.value,
-    volume_level: safeVolume
-  })
-}
-
-const toggleShuffle = () => {
-  if (!activeQueueId.value) return
-  const next = !shuffleOn.value
-  shuffleOn.value = next
-  sendMACmd('player_queues/shuffle', {
-    queue_id: activeQueueId.value,
-    shuffle_enabled: next
-  })
-}
-
-const cycleRepeat = () => {
-  if (!activeQueueId.value) return
-  const modes = ['off', 'all', 'one']
-  const index = modes.indexOf(repeatMode.value)
-  const next = modes[(index + 1) % modes.length]
-  repeatMode.value = next
-  sendMACmd('player_queues/repeat', {
-    queue_id: activeQueueId.value,
-    repeat_mode: next
-  })
+  sendMACmd('players/cmd/volume_set', { player_id: activePlayerId.value, volume_level: safeVolume })
 }
 
 const computeProgressFromEvent = (event, targetElement) => {

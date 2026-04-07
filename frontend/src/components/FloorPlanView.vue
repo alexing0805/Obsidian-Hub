@@ -4,12 +4,14 @@
     <!-- 背景图片 + 实体图标层 -->
     <div
       ref="planContainer"
-      class="w-full h-full"
+      class="w-full h-full touch-none"
       :style="bgStyle"
       @mousedown="onMouseDown"
       @mousemove="onMouseMove"
       @mouseup="onMouseUp"
       @mouseleave="onMouseUp"
+      @touchmove.prevent="onTouchMove"
+      @touchend="onTouchEnd"
     >
       <!-- 实体图标 -->
       <div
@@ -19,143 +21,147 @@
         :style="iconStyle(mapping)"
         @click.stop="onIconClick(mapping)"
         @mousedown.stop="startDrag(mapping, $event)"
+        @touchstart.stop="startTouchDrag(mapping, $event)"
       >
         <!-- 光晕效果 (仅灯光开启时) -->
-        <div v-if="entityState(mapping.entity_id) === 'on' && mapping.type === '灯'" 
-          class="absolute inset-0 -m-8 rounded-full bg-yellow-400/20 blur-2xl animate-pulse"></div>
-        
+        <div v-if="entityState(mapping.entity_id) === 'on' && mapping.type === '灯'"
+          class="absolute inset-0 -m-10 rounded-full bg-yellow-400/20 blur-2xl animate-pulse"></div>
+
         <!-- 图标容器 -->
-        <div class="relative w-12 h-12 flex items-center justify-center rounded-2xl glass-panel transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
+        <div class="relative w-16 h-16 flex items-center justify-center rounded-2xl glass-panel transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
           :class="entityState(mapping.entity_id) === 'on' ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5'">
-          <component :is="getIconComponent(mapping.type)" 
-            class="w-6 h-6 transition-colors duration-300"
+          <component :is="getIconComponent(mapping.type)"
+            class="w-8 h-8 transition-colors duration-300"
             :class="entityState(mapping.entity_id) === 'on' ? (mapping.type === '灯' ? 'text-yellow-300 glow-yellow' : 'text-cyan-300 glow-blue') : 'text-white/40'" />
-          
-          <!-- 状态呼吸灯 -->
+
           <div v-if="entityState(mapping.entity_id) === 'on'"
-            class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] bg-white animate-pulse">
+            class="absolute top-2 right-2 w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.5)] bg-white animate-pulse">
           </div>
         </div>
 
-        <div v-if="showLabels" class="mt-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/5 text-[10px] font-bold tracking-tight text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] shadow-sm">
+        <div v-if="showLabels" class="mt-2.5 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/5 text-sm font-bold tracking-tight text-white/80 whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] shadow-sm">
           {{ mapping.label || shortId(mapping.entity_id) }}
         </div>
       </div>
- 
+
       <!-- 拖拽预览 -->
       <div
         v-if="dragging"
         class="entity-item absolute flex flex-col items-center pointer-events-none opacity-50"
         :style="previewStyle"
       >
-        <div class="w-12 h-12 flex items-center justify-center rounded-2xl glass-panel border-dashed border-cyan-400/50">
-          <component :is="getIconComponent(dragMapping?.type)" class="w-6 h-6 text-cyan-400" />
+        <div class="w-16 h-16 flex items-center justify-center rounded-2xl glass-panel border-dashed border-cyan-400/50">
+          <component :is="getIconComponent(dragMapping?.type)" class="w-8 h-8 text-cyan-400" />
         </div>
       </div>
     </div>
- 
-    <!-- 右上角控制栏 -->
-    <div class="absolute top-4 right-4 flex flex-col gap-2.5">
-      <!-- 编辑模式 -->
+
+    <!-- 右下角控制栏 -->
+    <div class="absolute bottom-6 right-6 flex flex-col gap-3">
       <button
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide transition-all active:scale-95"
-        :class="editMode ? 'text-cyan-300 border-cyan-500/50 bg-cyan-500/10' : 'text-white/40 border-white/10 hover:bg-white/5'"
+        class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all shadow-lg"
+        :class="editMode ? 'text-cyan-300 border border-cyan-500/50 bg-cyan-500/10' : 'border-white/10'"
         @click="editMode = !editMode"
+        :title="editMode ? '完成编辑' : '编辑视图'"
       >
-        {{ editMode ? 'DONE' : 'EDIT PLAN' }}
-      </button>
- 
-      <!-- 添加设备 -->
-      <button v-if="editMode"
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-cyan-400 border-cyan-500/30 hover:bg-cyan-500/10 transition-all"
-        @click="showAddDrawer = true">
-        ADD DEVICE
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
       </button>
 
-      <!-- 上传背景图 -->
+      <button v-if="editMode"
+        class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-all shadow-lg"
+        @click="showAddDrawer = true"
+        title="添加设备"
+      >
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      </button>
+
       <label v-if="editMode"
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-white/60 border-white/10 cursor-pointer hover:bg-white/10 transition-all">
-        UPLOAD MAP
+        class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80 transition-all shadow-lg cursor-pointer"
+        title="上传户型图"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
         <input type="file" accept="image/*" class="hidden" @change="onImageUpload" />
       </label>
- 
-      <!-- 保存位置 -->
+
       <button v-if="editMode && hasChanges"
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wide text-emerald-400 border-emerald-500/50 bg-emerald-500/10 animate-pulse"
-        @click="savePositions">
-        SAVE CHANGES
+        class="w-14 h-14 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/50 bg-emerald-500/10 shadow-lg animate-pulse"
+        @click="savePositions"
+        title="保存更改"
+      >
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
       </button>
     </div>
- 
+
+    <!-- 左上角：图层切换 -->
+    <div v-if="editMode" class="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[60%]">
+      <button
+        v-for="layer in layers"
+        :key="layer"
+        class="glass-panel rounded-xl px-4 py-2.5 text-sm font-bold tracking-wider transition-all"
+        :class="activeLayer === layer ? 'text-white border-white/30 bg-white/10 shadow-lg' : 'text-white/40 border-white/5 hover:bg-white/5 hover:text-white/60'"
+        @click="activeLayer = layer"
+      >
+        {{ layer }}
+      </button>
+    </div>
+
+    <!-- 编辑模式提示 -->
+    <div v-if="editMode" class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-effect rounded-xl px-5 py-2.5 text-sm text-white/50 shadow-lg">
+      💡 点击图标切换开关 | 拖拽移动位置 | 🖼️ 上传户型图
+    </div>
+
     <!-- 添加设备抽屉 (Modal) -->
     <Teleport to="body">
-      <div v-if="showAddDrawer" class="fixed inset-0 z-[100] flex items-center justify-center p-6">
+      <div v-if="showAddDrawer" class="fixed inset-0 z-[100] flex items-center justify-center p-8">
         <div class="absolute inset-0 bg-black/60 backdrop-blur-xl" @click="showAddDrawer = false"></div>
-        <div class="relative glass-panel rounded-[2.5rem] w-full max-w-xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-white/10 flex flex-col animate-fade-in">
+        <div class="relative glass-panel rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-white/10 animate-fade-in">
           <div class="p-6 border-b border-white/5 flex items-center justify-between">
-            <h3 class="text-xl font-heading font-extrabold text-white">Add Device to Plan</h3>
-            <button class="text-white/20 hover:text-white" @click="showAddDrawer = false">✕</button>
+            <h3 class="text-xl font-heading font-extrabold text-white">添加设备到视图</h3>
+            <button class="w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all bg-white/5 border border-white/10" @click="showAddDrawer = false">✕</button>
           </div>
-          
+
           <div class="p-4 border-b border-white/5">
-            <input 
-              v-model="searchQuery" 
-              type="text" 
-              placeholder="Search entities (e.g. light.kitchen)" 
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索设备 (例如 light.kitchen)"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
           </div>
 
           <div class="flex-1 overflow-y-auto p-4 space-y-2">
-            <div 
-              v-for="entity in availableEntities" 
+            <div
+              v-for="entity in availableEntities"
               :key="entity.entity_id"
-              class="flex items-center justify-between p-4 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all group"
+              class="flex items-center justify-between p-5 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all group"
               @click="addEntityToPlan(entity)"
             >
-              <div class="flex flex-col min-w-0">
-                <span class="text-sm font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
-                <span class="text-[10px] uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
+              <div class="flex flex-col min-w-0 flex-1">
+                <span class="text-base font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
+                <span class="text-xs uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
               </div>
-              <button class="px-3 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-400 text-[10px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">
-                Select
+              <button class="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity border border-cyan-500/30">
+                添加
               </button>
             </div>
-            <div v-if="availableEntities.length === 0" class="text-center py-20 text-white/20">
-               No entities found
+            <div v-if="availableEntities.length === 0" class="text-center py-20 text-white/20 text-lg">
+               未找到设备
             </div>
           </div>
         </div>
       </div>
     </Teleport>
- 
-    <!-- 左上角：图层/模式切换 -->
-    <div class="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[70%]">
-      <button
-        v-for="layer in layers"
-        :key="layer"
-        class="glass-panel rounded-xl px-4 py-2 text-[11px] font-bold tracking-wider transition-all"
-        :class="activeLayer === layer ? 'text-white border-white/30 bg-white/10 shadow-lg' : 'text-white/30 border-white/5 hover:bg-white/5 hover:text-white/60'"
-        @click="activeLayer = layer"
-      >
-        {{ layer.toUpperCase() }}
-      </button>
-    </div>
 
-    <!-- 编辑模式提示 -->
-    <div v-if="editMode" class="absolute bottom-3 left-1/2 -translate-x-1/2 glass-effect rounded-lg px-4 py-1.5 text-xs text-white/50">
-      💡 点击图标切换开关 | 拖拽移动位置 | 🖼️ 上传户型图
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, h } from 'vue'
+import { ref, computed, watch, h } from 'vue'
 
 const props = defineProps({
   haEntities: { type: Array, default: () => [] },
   entityMapping: { type: Array, default: () => [] },
-  bgImage: { type: String, default: '' },  // base64 or URL
+  bgImage: { type: String, default: '' },
   weatherEntityId: { type: String, default: '' },
   maState: { type: Object, default: () => ({}) },
 })
@@ -166,15 +172,13 @@ const planContainer = ref(null)
 const editMode = ref(false)
 const dragging = ref(false)
 const dragMapping = ref(null)
-const dragOffset = ref({ x: 0, y: 0 })
 const previewPos = ref({ x: 0, y: 0 })
-const activeEntity = ref(null)
 const localMappings = ref([])
 const localBgImage = ref('')
 const hasChanges = ref(false)
 const showAddDrawer = ref(false)
 const searchQuery = ref('')
- 
+
 const availableEntities = computed(() => {
   const query = searchQuery.value.toLowerCase()
   const mappedIds = localMappings.value.map(m => m.entity_id)
@@ -188,11 +192,11 @@ const availableEntities = computed(() => {
 })
 
 const addEntityToPlan = (entity) => {
-  const type = entity.entity_id.startsWith('light.') ? '灯' : 
-               entity.entity_id.startsWith('climate.') ? '空调' : 
+  const type = entity.entity_id.startsWith('light.') ? '灯' :
+               entity.entity_id.startsWith('climate.') ? '空调' :
                entity.entity_id.startsWith('switch.') ? '开关' :
                entity.entity_id.startsWith('sensor.') ? '传感器' : '其他'
-  
+
   const newMapping = {
     entity_id: entity.entity_id,
     x: 0.5,
@@ -201,7 +205,7 @@ const addEntityToPlan = (entity) => {
     label: entity.attributes?.friendly_name || entity.entity_id,
     layer: activeLayer.value === '全部' ? '客厅' : activeLayer.value
   }
-  
+
   localMappings.value = [...localMappings.value, newMapping]
   hasChanges.value = true
   showAddDrawer.value = false
@@ -215,7 +219,6 @@ const displayMappings = computed(() => {
   return localMappings.value.filter(m => m.layer === activeLayer.value)
 })
 
-// 现代图标组件 (使用 h() 渲染函数以兼容生产构建)
 const IconLight = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { d: 'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5' }),
   h('path', { d: 'M9 18h6' }),
@@ -270,7 +273,6 @@ const iconStyle = (mapping) => {
   const y = (mapping.y || 0.5) * 100
   const state = entityState(mapping.entity_id)
   const isActive = state === 'on'
-  const isComplex = ['空调', '传感器'].includes(mapping.type)
   const color = isActive
     ? (mapping.type === '灯' ? '#fbbf24' : '#60a5fa')
     : '#555'
@@ -279,7 +281,7 @@ const iconStyle = (mapping) => {
     top: `${y}%`,
     transform: 'translate(-50%, -50%)',
     color,
-    filter: isActive && mapping.type === '灯' ? 'drop-shadow(0 0 6px #fbbf2488)' : 'none',
+    filter: isActive && mapping.type === '灯' ? 'drop-shadow(0 0 8px #fbbf2488)' : 'none',
     zIndex: isActive ? 5 : 4,
   }
 }
@@ -301,20 +303,16 @@ const onIconClick = (mapping) => {
   if (complexTypes[mapping.type]) {
     emit('open', { type: complexTypes[mapping.type], entityId: mapping.entity_id })
   } else {
-    // Toggle directly
     const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
     emit('entity-toggle', entity || mapping)
   }
 }
 
-const onIconClick2 = (mapping) => {
-  if (editMode.value) return
-  const entity = props.haEntities.find(e => e.entity_id === mapping.entity_id)
-  if (['空调', '传感器'].includes(mapping.type)) {
-    activeEntity.value = mapping
-  } else {
-    emit('entity-toggle', entity || mapping)
+const getClientPos = (e) => {
+  if (e.touches && e.touches.length > 0) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY }
   }
+  return { x: e.clientX, y: e.clientY }
 }
 
 const startDrag = (mapping, event) => {
@@ -322,27 +320,22 @@ const startDrag = (mapping, event) => {
   dragging.value = true
   dragMapping.value = mapping
   const rect = planContainer.value.getBoundingClientRect()
-  const x = (mapping.x || 0.5) * rect.width
-  const y = (mapping.y || 0.5) * rect.height
-  dragOffset.value = {
-    x: event.clientX - x,
-    y: event.clientY - y,
-  }
-  previewPos.value = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+  const pos = getClientPos(event)
+  previewPos.value = { x: pos.x - rect.left, y: pos.y - rect.top }
 }
 
-const onMouseDown = (e) => {
-  if (!editMode.value || dragging.value) return
+const startTouchDrag = (mapping, event) => {
+  if (!editMode.value) return
+  event.preventDefault()
+  startDrag(mapping, event)
 }
 
 const onMouseMove = (e) => {
   if (!dragging.value || !dragMapping.value || !planContainer.value) return
   const rect = planContainer.value.getBoundingClientRect()
-  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left - dragOffset.value.x + dragOffset.value.x))
-  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top - dragOffset.value.y + dragOffset.value.y))
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left))
+  const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top))
   previewPos.value = { x, y }
-
-  // Update position in real-time
   const nx = x / rect.width
   const ny = y / rect.height
   const idx = localMappings.value.findIndex(m => m.entity_id === dragMapping.value.entity_id)
@@ -353,6 +346,25 @@ const onMouseMove = (e) => {
   }
 }
 
+const onTouchMove = (e) => {
+  if (!dragging.value || !dragMapping.value || !planContainer.value) return
+  e.preventDefault()
+  const rect = planContainer.value.getBoundingClientRect()
+  const pos = getClientPos(e)
+  const x = Math.max(0, Math.min(rect.width, pos.x - rect.left))
+  const y = Math.max(0, Math.min(rect.height, pos.y - rect.top))
+  previewPos.value = { x, y }
+  const nx = x / rect.width
+  const ny = y / rect.height
+  const idx = localMappings.value.findIndex(m => m.entity_id === dragMapping.value.entity_id)
+  if (idx !== -1) {
+    localMappings.value = localMappings.value.map((m, i) =>
+      i === idx ? { ...m, x: nx, y: ny } : m
+    )
+  }
+}
+
+const onMouseDown = () => {}
 const onMouseUp = () => {
   if (dragging.value) {
     hasChanges.value = true
@@ -360,6 +372,7 @@ const onMouseUp = () => {
     dragMapping.value = null
   }
 }
+const onTouchEnd = () => { onMouseUp() }
 
 const savePositions = () => {
   emit('mapping-update', localMappings.value)
@@ -382,7 +395,6 @@ const showLabels = computed(() => {
   return editMode.value || activeLayer.value !== '全部'
 })
 
-// Sync from props
 watch(() => props.entityMapping, (v) => {
   if (!hasChanges.value) localMappings.value = [...(v || [])]
 }, { immediate: true, deep: true })
@@ -398,38 +410,37 @@ watch(() => props.bgImage, (v) => {
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
- 
+
 .glow-yellow {
   filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
   animation: glow-pulse-yellow 2s ease-in-out infinite;
 }
- 
+
 .glow-blue {
   filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.8));
   animation: glow-pulse-blue 2s ease-in-out infinite;
 }
- 
+
 @keyframes glow-pulse-yellow {
   0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
   50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)); }
 }
- 
+
 @keyframes glow-pulse-blue {
   0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5)); }
   50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
 }
- 
-@keyframes music-bar {
-  0%, 100% { height: 4px; }
-  50% { height: 100%; }
-}
- 
+
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
- 
+
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.touch-none {
+  touch-action: none;
 }
 </style>

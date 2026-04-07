@@ -1,107 +1,103 @@
 <template>
-  <div class="fixed inset-0 z-50 flex items-center justify-center p-6 md:p-12" @click.self="$emit('close')">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-md transition-all duration-500" @click="$emit('close')"></div>
- 
-    <div class="relative glass-panel rounded-[2.5rem] w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in">
- 
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-8" @click.self="$emit('close')">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-md transition-all duration-500" @click="$emit('close')"></div>
+
+    <div class="relative glass-panel rounded-[2.5rem] w-full max-w-4xl max-h-[88vh] flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in">
+
       <!-- 标题栏 -->
       <div class="flex items-center justify-between px-8 py-5 border-b border-white/5 shrink-0 bg-white/5">
-        <div class="flex items-center gap-3 text-xl font-extrabold font-heading tracking-tight text-white/90">
+        <div class="flex items-center gap-4 text-2xl font-extrabold font-heading tracking-tight text-white/90">
           <span class="opacity-80">{{ titleIcon }}</span>
           <span>{{ titleText }}</span>
         </div>
-        <button class="w-10 h-10 rounded-2xl flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all active:scale-90 bg-white/5 border border-white/5"
+        <button class="w-12 h-12 rounded-2xl flex items-center justify-center text-white/30 hover:text-white hover:bg-white/10 transition-all active:scale-90 bg-white/5 border border-white/5"
           @click="$emit('close')">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
 
       <!-- 内容区 -->
-      <div class="flex-1 overflow-y-auto p-5">
+      <div class="flex-1 overflow-y-auto p-6">
 
         <!-- 灯光详情 -->
         <div v-if="type === 'lights'">
-          <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div class="grid grid-cols-3 gap-4">
             <div v-for="light in displayLights" :key="light.entity_id"
-              class="glass-effect rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer transition-all border"
+              class="glass-effect rounded-2xl p-5 flex flex-col items-center gap-3 cursor-pointer transition-all border"
               :class="light.state === 'on' ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-white/10 hover:border-white/20'"
               @click="toggleLight(light)">
-              <div class="text-3xl">{{ light.state === 'on' ? '💡' : '🔦' }}</div>
-              <div class="text-xs text-center text-white/70 truncate w-full">
+              <div class="text-4xl">{{ light.state === 'on' ? '💡' : '🔦' }}</div>
+              <div class="text-sm text-center text-white/70 truncate w-full">
                 {{ light.attributes?.friendly_name || light.entity_id }}
               </div>
-              <div class="text-xs" :class="light.state === 'on' ? 'text-yellow-300' : 'text-white/30'">
+              <div class="text-sm" :class="light.state === 'on' ? 'text-yellow-300' : 'text-white/30'">
                 {{ light.state === 'on' ? '● 已开启' : '○ 已关闭' }}
               </div>
             </div>
           </div>
-          <div v-if="!displayLights.length" class="text-center text-white/30 py-10">未检测到灯光设备</div>
+          <div v-if="!displayLights.length" class="text-center text-white/30 py-16">未检测到灯光设备</div>
         </div>
 
-        <!-- 空调详情 (极简高级版) -->
+        <!-- 空调详情 -->
         <div v-if="type === 'climate'">
           <div v-if="displayClimates.length" class="space-y-6 animate-fade-in py-2">
             <div v-for="climate in displayClimates" :key="climate.entity_id"
-              class="glass-panel rounded-[3rem] p-8 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden group mb-6">
-              
-              <!-- 背景装饰光晕 -->
-              <div class="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/10 blur-[100px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
+              class="glass-panel rounded-[3rem] p-10 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden group mb-8">
 
-              <!-- 头部：设备名与当前状态 -->
+              <div class="absolute -top-24 -right-24 w-72 h-72 bg-blue-500/10 blur-[100px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
+
               <div class="flex items-center justify-between mb-8">
                 <div>
-                  <div class="text-2xl font-black tracking-tight text-white/90">{{ climate.attributes?.friendly_name || '空调' }}</div>
-                  <div class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/60 mt-1">{{ climate.state }}模式</div>
+                  <div class="text-3xl font-black tracking-tight text-white/90">{{ climate.attributes?.friendly_name || '空调' }}</div>
+                  <div class="text-xs font-black uppercase tracking-[0.3em] text-blue-400/60 mt-2">{{ climate.state }}模式</div>
                 </div>
-                <div class="flex items-center gap-4 bg-white/5 p-2 rounded-2xl border border-white/10 shadow-inner">
+                <div class="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 shadow-inner">
                   <div class="text-right">
-                    <div class="text-[10px] font-black text-white/20 uppercase">室内温度</div>
-                    <div class="text-xl font-black text-white">{{ climate.attributes?.current_temperature || '--' }}°</div>
+                    <div class="text-xs font-black text-white/20 uppercase">室内温度</div>
+                    <div class="text-2xl font-black text-white">{{ climate.attributes?.current_temperature || '--' }}°</div>
                   </div>
-                  <div class="w-[1px] h-8 bg-white/10"></div>
-                  <div class="text-3xl">🌡️</div>
+                  <div class="w-px h-10 bg-white/10"></div>
+                  <div class="text-4xl">🌡️</div>
                 </div>
               </div>
 
-              <!-- 核心控制区 -->
-              <div class="flex items-center justify-center gap-12 mb-10">
+              <div class="flex items-center justify-center gap-16 mb-12">
                 <button @click="setTemp(climate, (climate.attributes?.temperature || 24) - 0.5)"
-                  class="w-16 h-16 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-3xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  class="w-20 h-20 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-4xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
                   －
                 </button>
                 <div class="relative flex flex-col items-center">
-                  <div class="text-9xl font-black tracking-tighter text-white tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                    {{ Math.round(climate.attributes?.temperature || 24) }}<span class="text-4xl align-top mt-4 ml-1">°</span>
+                  <div class="text-[7rem] font-black tracking-tighter text-white tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] leading-none">
+                    {{ Math.round(climate.attributes?.temperature || 24) }}<span class="text-4xl align-top mt-6 ml-1">°</span>
                   </div>
                 </div>
                 <button @click="setTemp(climate, (climate.attributes?.temperature || 24) + 0.5)"
-                  class="w-16 h-16 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-3xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  class="w-20 h-20 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-4xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
                   ＋
                 </button>
               </div>
 
-              <!-- 底部控制 -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+              <div class="grid grid-cols-2 gap-10 pt-4">
                 <div class="space-y-4">
-                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-1">Operation Mode</div>
-                  <div class="flex flex-wrap gap-2.5">
+                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.3em] ml-2">运行模式</div>
+                  <div class="flex flex-wrap gap-3">
                     <button v-for="mode in getHvacModes(climate)" :key="mode.value"
-                      class="flex-1 min-w-[80px] px-4 py-3.5 text-[11px] font-black rounded-[1.5rem] border transition-all uppercase tracking-wider"
+                      class="flex-1 min-w-[90px] px-5 py-4 text-sm font-black rounded-[1.5rem] border transition-all uppercase tracking-wider"
                       :class="climate.state === mode.value ? 'border-blue-500/50 bg-blue-500/20 text-blue-400' : 'border-white/5 bg-white/[0.02] text-white/30'"
                       @click="setMode(climate, mode.value)">
-                      <div class="text-xl mb-1">{{ mode.icon }}</div>
+                      <div class="text-2xl mb-1">{{ mode.icon }}</div>
                       {{ mode.label }}
                     </button>
                   </div>
                 </div>
                 <div class="space-y-4">
-                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-1">Fan Speed</div>
-                  <div class="flex flex-wrap gap-2.5">
+                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.3em] ml-2">风速</div>
+                  <div class="flex flex-wrap gap-3">
                     <button v-for="fan in getFanModes(climate)" :key="fan"
-                      class="flex-1 min-w-[70px] px-4 py-3.5 text-[11px] font-black rounded-[1.5rem] border transition-all uppercase tracking-tighter"
+                      class="flex-1 min-w-[80px] px-4 py-4 text-sm font-black rounded-[1.5rem] border transition-all uppercase tracking-tighter"
                       :class="climate.attributes?.fan_mode === fan ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-400' : 'border-white/5 bg-white/[0.02] text-white/30'"
                       @click="setFanMode(climate, fan)">
-                      <div class="text-lg mb-1">🌬️</div>
+                      <div class="text-xl mb-1">🌬️</div>
                       {{ fan }}
                     </button>
                   </div>
@@ -114,80 +110,77 @@
           </div>
         </div>
 
-        <!-- 窗帘详情 (新) -->
+        <!-- 窗帘详情 -->
         <div v-if="type === 'cover'">
           <div v-if="displayCovers.length" class="space-y-6 animate-fade-in py-2">
             <div v-for="cover in displayCovers" :key="cover.entity_id"
               class="glass-panel rounded-[3rem] p-10 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden">
-              
+
               <div class="flex items-center justify-between mb-10">
                 <div>
                   <div class="text-3xl font-black tracking-tight text-white/90">{{ cover.attributes?.friendly_name || '窗帘' }}</div>
-                  <div class="text-xs font-bold uppercase tracking-[0.3em] text-cyan-400/60 mt-1">{{ cover.state }}</div>
+                  <div class="text-sm font-bold uppercase tracking-[0.3em] text-cyan-400/60 mt-2">{{ cover.state }}</div>
                 </div>
                 <div class="text-5xl">🪟</div>
               </div>
 
-              <!-- 主控制按钮 -->
               <div class="grid grid-cols-3 gap-6 mb-12">
                 <button @click="$emit('cover-action', { entity: cover, action: 'open_cover' })"
                   class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🔼</div>
-                  <span class="text-[10px] font-black uppercase tracking-widest text-white/40">OPEN</span>
+                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">🔼</div>
+                  <span class="text-xs font-black uppercase tracking-widest text-white/40">OPEN</span>
                 </button>
                 <button @click="$emit('cover-action', { entity: cover, action: 'stop_cover' })"
                   class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">⏹️</div>
-                  <span class="text-[10px] font-black uppercase tracking-widest text-white/40">STOP</span>
+                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">⏹️</div>
+                  <span class="text-xs font-black uppercase tracking-widest text-white/40">STOP</span>
                 </button>
                 <button @click="$emit('cover-action', { entity: cover, action: 'close_cover' })"
                   class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-4xl mb-2 group-hover:scale-110 transition-transform">🔽</div>
-                  <span class="text-[10px] font-black uppercase tracking-widest text-white/40">CLOSE</span>
+                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">🔽</div>
+                  <span class="text-xs font-black uppercase tracking-widest text-white/40">CLOSE</span>
                 </button>
               </div>
 
-              <!-- 百分比滑块 -->
-              <div v-if="cover.attributes?.current_position !== undefined" class="space-y-4 px-2">
+              <div v-if="cover.attributes?.current_position !== undefined" class="space-y-4 px-4">
                 <div class="flex justify-between items-end">
-                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.5em]">Current Position</div>
-                  <div class="text-2xl font-black text-cyan-400 tabular-nums">{{ cover.attributes.current_position }}%</div>
+                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.5em]">当前位置</div>
+                  <div class="text-3xl font-black text-cyan-400 tabular-nums">{{ cover.attributes.current_position }}%</div>
                 </div>
                 <input type="range" min="0" max="100" step="1"
                   :value="cover.attributes.current_position"
-                  class="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
+                  class="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
                   @change="$emit('cover-action', { entity: cover, action: 'set_cover_position', value: $event.target.value })" />
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 天气详情 (增强版) -->
+        <!-- 天气详情 -->
         <div v-if="type === 'weather'">
           <div v-if="weatherEntity" class="space-y-8 py-4 animate-fade-in relative z-10">
-            <!-- 见之前的实现，保持不变 -->
-            <div class="text-center py-6">
-              <div class="text-9xl mb-4 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
-              <div class="text-7xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
-              <div class="text-2xl font-black text-cyan-400 mt-2 uppercase tracking-[0.4em]">{{ weatherText }}</div>
-              <div class="text-xs font-bold text-white/20 mt-1 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
+            <div class="text-center py-8">
+              <div class="text-[7rem] mb-6 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
+              <div class="text-6xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
+              <div class="text-3xl font-black text-cyan-400 mt-3 uppercase tracking-[0.4em]">{{ weatherText }}</div>
+              <div class="text-sm font-bold text-white/20 mt-2 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
             </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
+            <div class="grid grid-cols-4 gap-4 px-4">
               <div v-for="attr in weatherAttrs" :key="attr.key"
-                class="glass-panel rounded-[1.5rem] p-4 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
-                <div class="text-[10px] font-black text-white/20 uppercase mb-2 tracking-widest">{{ attr.label }}</div>
-                <div class="text-lg font-black text-white/90">{{ attr.value }}</div>
+                class="glass-panel rounded-[1.5rem] p-5 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
+                <div class="text-xs font-black text-white/20 uppercase mb-2 tracking-widest">{{ attr.label }}</div>
+                <div class="text-xl font-black text-white/90">{{ attr.value }}</div>
               </div>
             </div>
-            <div v-if="sidebarForecast.length" class="space-y-4 px-2 pt-4 border-t border-white/5">
-              <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7-Day Forecast</div>
+            <div v-if="sidebarForecast.length" class="space-y-4 px-4 pt-4 border-t border-white/5">
+              <div class="text-xs font-black text-white/20 uppercase tracking-[0.4em] ml-2">7天预报</div>
               <div class="flex gap-3 overflow-x-auto pb-4 scrollbar-hidden">
-                <div v-for="(fc, idx) in sidebarForecast" :key="idx" 
-                  class="flex-shrink-0 w-32 glass-panel p-5 rounded-[2rem] flex flex-col items-center border border-white/5">
-                  <span class="text-[10px] font-black text-white/30 uppercase mb-3">{{ fc.weekday }}</span>
+                <div v-for="(fc, idx) in sidebarForecast" :key="idx"
+                  class="flex-shrink-0 w-36 glass-panel p-5 rounded-[2rem] flex flex-col items-center border border-white/5">
+                  <span class="text-xs font-black text-white/30 uppercase mb-3">{{ fc.weekday }}</span>
                   <span class="text-4xl mb-3 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
                   <div class="flex flex-col items-center">
-                    <span class="text-base font-black text-white">{{ fc.temp }}°</span>
+                    <span class="text-lg font-black text-white">{{ fc.temp }}°</span>
                   </div>
                 </div>
               </div>
@@ -195,7 +188,46 @@
           </div>
         </div>
 
-        <!-- 其他详情 (省略... ) -->
+        <!-- 电池详情 -->
+        <div v-if="type === 'battery'">
+          <div class="grid grid-cols-3 gap-4">
+            <div v-for="battery in lowBatteryEntities" :key="battery.entity_id"
+              class="glass-effect rounded-2xl p-5 flex flex-col items-center gap-3 border"
+              :class="parseFloat(battery.state) <= 10 ? 'border-red-500/40 bg-red-500/5' : 'border-yellow-500/40 bg-yellow-500/5'">
+              <div class="text-4xl">{{ parseFloat(battery.state) <= 10 ? '🔴' : '🟡' }}</div>
+              <div class="text-sm text-center text-white/70 truncate w-full">
+                {{ battery.attributes?.friendly_name || battery.entity_id }}
+              </div>
+              <div class="text-xl font-black" :class="parseFloat(battery.state) <= 10 ? 'text-red-400' : 'text-yellow-400'">
+                {{ battery.state }}%
+              </div>
+            </div>
+          </div>
+          <div v-if="!lowBatteryEntities.length" class="text-center text-white/30 py-16">所有设备电量正常</div>
+        </div>
+
+        <!-- 离线设备详情 -->
+        <div v-if="type === 'offline'">
+          <div class="grid grid-cols-2 gap-4">
+            <div v-for="entity in offlineEntities" :key="entity.entity_id"
+              class="glass-effect rounded-2xl p-5 flex items-center gap-4 border border-orange-500/20 bg-orange-500/5">
+              <div class="text-3xl">📡</div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-white/70 truncate">
+                  {{ entity.attributes?.friendly_name || entity.entity_id }}
+                </div>
+                <div class="text-xs text-orange-400/60 uppercase">{{ entity.state }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-if="!offlineEntities.length" class="text-center text-white/30 py-16">所有设备在线</div>
+        </div>
+
+        <!-- 音乐详情 -->
+        <div v-if="type === 'music'">
+          <MusicAssistantPlayer :ma-state="maState" />
+        </div>
+
       </div>
     </div>
   </div>

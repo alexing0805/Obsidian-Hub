@@ -861,6 +861,12 @@ async def restart_service():
 
 async def _reload_connections():
     """Reload HA/MA state with updated settings."""
+    # Restart HA poll loop to pick up new URL/token/interval
+    ha_t = getattr(app.state, "ha_poll_task", None)
+    if ha_t:
+        ha_t.cancel()
+    app.state.ha_poll_task = asyncio.create_task(ha_poll_loop())
+
     # Update MA client config
     ma_client.url = _MA_URL
     ma_client.token = _MA_TOKEN
@@ -875,6 +881,7 @@ async def _reload_connections():
     ma_client.ws = None
     app.state.ma_connect_task = asyncio.create_task(ma_client.run())
     app.state.ma_poll_task = asyncio.create_task(ma_poll_loop())
+
     try:
         await refresh_ha_state_once()
     except Exception as exc:

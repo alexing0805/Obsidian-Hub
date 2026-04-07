@@ -463,8 +463,6 @@ const loadSettings = async () => {
         ma_refresh_interval: s.ma_refresh_interval || 5,
         temperature_entity: s.temperature_entity || '',
         humidity_entity: s.humidity_entity || '',
-        light_mapping: [],
-        light_positions: [],
         entity_mapping: s.entity_mapping || [],
         show_sidebar: s.show_sidebar !== undefined ? s.show_sidebar : true,
         clock_24h: s.clock_24h !== undefined ? s.clock_24h : true,

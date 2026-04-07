@@ -35,7 +35,12 @@ obsidian-hub/
 │   │   ├── main.js
 │   │   ├── style.css
 │   │   └── components/
-│   │       └── MusicAssistantPlayer.vue
+│   │       ├── DetailOverlay.vue
+│   │       ├── FloorPlanView.vue
+│   │       ├── MusicAssistantPlayer.vue
+│   │       ├── MusicPlayerSelector.vue
+│   │       ├── SettingsView.vue
+│   │       └── SidebarWidgets.vue
 │   ├── package.json
 │   └── vite.config.js
 ├── Dockerfile

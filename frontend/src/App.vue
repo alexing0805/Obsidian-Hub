@@ -2,61 +2,60 @@
   <div class="grid-pattern min-h-screen flex flex-col text-white">
 
     <!-- 顶部导航栏 -->
-    <header class="glass-effect border-b border-white/10 px-6 py-3 flex items-center gap-4 shrink-0 z-30">
+    <header class="glass-effect border-b border-white/10 px-6 py-4 flex items-center gap-5 shrink-0 z-30">
       <!-- 首页图标按钮 -->
       <button
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 overflow-hidden"
-        :class="currentTab !== 'overview' ? 'ring-1 ring-white/20 hover:ring-white/40' : 'ring-1 ring-cyan-500/50'"
+        class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden ring-1 ring-cyan-500/50 hover:ring-white/40"
         @click="currentTab = 'overview'"
         title="首页"
       >
-        <img src="/icon.jpg" class="w-full h-full object-cover rounded-lg" alt="首页" />
+        <img src="/icon.jpg" class="w-full h-full object-cover rounded-xl" alt="首页" />
       </button>
 
-      <div class="h-6 w-px bg-white/10 mx-1"></div>
- 
+      <div class="h-8 w-px bg-white/10"></div>
+
       <!-- 分段导航 -->
-      <nav class="flex gap-1.5 p-1 bg-white/5 rounded-xl border border-white/5">
+      <nav class="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5">
         <button
           v-for="tab in mainTabs"
           :key="tab.id"
-          class="px-4 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-all duration-300 font-heading"
-          :class="currentTab === tab.id ? 'bg-white/15 text-white shadow-lg' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
+          class="px-5 py-2.5 rounded-xl flex items-center gap-2 text-base font-medium transition-all duration-300 font-heading min-w-[80px] justify-center"
+          :class="currentTab === tab.id ? 'bg-white/15 text-white shadow-lg ring-1 ring-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
           @click="currentTab = tab.id"
         >
-          <span class="text-base">{{ tab.icon }}</span>
+          <span class="text-lg">{{ tab.icon }}</span>
           <span>{{ tab.label }}</span>
         </button>
       </nav>
- 
+
       <div class="flex-1"></div>
- 
+
       <!-- 系统状态区 -->
-      <div class="flex items-center gap-4">
-        <div class="flex flex-col items-end mr-2">
-          <span class="text-[10px] uppercase tracking-tighter text-white/30 font-bold leading-none mb-1">System Status</span>
-          <span class="text-xs font-heading font-semibold" :class="statusClass">{{ statusText }}</span>
+      <div class="flex items-center gap-5">
+        <div class="flex flex-col items-end mr-3">
+          <span class="text-xs uppercase tracking-wider text-white/30 font-bold leading-none mb-1.5">System Status</span>
+          <span class="text-sm font-heading font-semibold" :class="statusClass">{{ statusText }}</span>
         </div>
-        
+
         <button
-          class="w-10 h-10 rounded-xl glass-effect flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          class="w-12 h-12 rounded-2xl glass-effect flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
           @click="toggleFullscreen"
         >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
           </svg>
         </button>
       </div>
     </header>
- 
+
     <!-- 主体区域 -->
     <main class="flex-1 flex overflow-hidden">
       <!-- 左侧主内容区 -->
       <div class="flex-1 p-4 md:p-6 overflow-hidden bg-black/20">
         <div class="w-full h-full rounded-[2.5rem] glass-panel relative overflow-hidden shadow-2xl border-white/5 ring-1 ring-white/10">
           <transition name="fade" mode="out-in">
-            <component 
-              :is="currentTab === 'overview' ? FloorPlanView : (currentTab === 'settings' ? 'div' : 'div')"
+            <component
+              :is="currentTab === 'overview' ? FloorPlanView : 'div'"
               key="content"
               :ha-entities="haEntities"
               :entity-mapping="currentSettings.entity_mapping || []"
@@ -73,10 +72,10 @@
           </transition>
         </div>
       </div>
- 
-      <!-- 右侧边栏 (宽度回缩) -->
+
+      <!-- 右侧边栏 -->
       <aside v-if="showSidebar || currentTab === 'settings'"
-        class="w-80 glass-panel flex flex-col border-l border-white/5 hidden lg:flex shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
+        class="w-80 glass-panel flex flex-col border-l border-white/5 shadow-[-10px_0_40px_rgba(0,0,0,0.4)] h-full"
         :style="currentTab === 'settings' ? 'max-height: calc(100vh - 64px);' : ''">
         <div class="flex-1 overflow-hidden">
           <transition name="fade" mode="out-in">
@@ -127,31 +126,18 @@
       @cover-action="onCoverAction"
     />
 
-    <!-- 底部状态栏 -->
-    <div class="fixed bottom-0 left-0 right-0 glass-effect border-t border-white/10 py-2 px-4 md:px-6">
-      <div class="flex items-center justify-between text-xs text-white/40 gap-4">
-        <div class="flex items-center gap-4 md:gap-10 overflow-x-auto">
-          <span>灯光总数: {{ summary.lights_total }}</span>
-          <span>HA 实体: {{ haEntities.length }}</span>
-          <span>MA 队列: {{ maState.queues?.length || 0 }}</span>
-          <span>更新时间: {{ currentTime }}</span>
-        </div>
-        <div class="text-white/60 whitespace-nowrap">{{ statusText }}</div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import MusicAssistantPlayer from './components/MusicAssistantPlayer.vue'
-import MusicPlayerSelector from './components/MusicPlayerSelector.vue'
 import SettingsView from './components/SettingsView.vue'
 import SidebarWidgets from './components/SidebarWidgets.vue'
 import DetailOverlay from './components/DetailOverlay.vue'
 import FloorPlanView from './components/FloorPlanView.vue'
 
 const mainTabs = [
+  { id: 'overview', label: '首页', icon: '🏠' },
   { id: 'security', label: '安防', icon: '🔒' },
   { id: 'media', label: '影音', icon: '🎬' },
   { id: 'settings', label: '系统设置', icon: '⚙️' }
@@ -196,7 +182,6 @@ const maState = ref({
 const wsConnected = ref(false)
 let ws = null
 let wsReconnectTimer = null
-let wsHeartbeatTimer = null
 let clockInterval = null
 
 const filteredEntities = computed(() => {
@@ -220,7 +205,6 @@ const filteredEntities = computed(() => {
     if (a.device_class === 'battery') {
       return selectedBatteries.length === 0 || selectedBatteries.includes(e.entity_id)
     }
-    // offline - if selection is empty show all, otherwise only selected
     return selectedOffline.length === 0 || selectedOffline.includes(e.entity_id)
   })
 })
@@ -245,40 +229,6 @@ const onSettingsRestart = async () => {
     await fetch('/api/restart', { method: 'POST' })
   } catch (e) {
     console.error('Restart failed', e)
-  }
-}
-
-const onClimateTemp = async ({ entity, temp }) => {
-  try {
-    await fetch('/api/ha/service', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        domain: 'climate',
-        service: 'set_temperature',
-        entity_id: entity.entity_id,
-        service_data: { temperature: parseFloat(temp) }
-      })
-    })
-  } catch (e) {
-    console.error('Climate temp failed:', e)
-  }
-}
-
-const onClimateMode = async ({ entity, mode }) => {
-  try {
-    await fetch('/api/ha/service', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        domain: 'climate',
-        service: 'set_hvac_mode',
-        entity_id: entity.entity_id,
-        service_data: { hvac_mode: mode }
-      })
-    })
-  } catch (e) {
-    console.error('Climate mode failed:', e)
   }
 }
 
@@ -357,19 +307,6 @@ const onSwitchPlayer = async (player) => {
   }
 }
 
-
-const onEntityAdd = (entity) => {
-  const mapping = {
-    entity_id: entity.entity_id,
-    x: 0.2 + Math.random() * 0.6,
-    y: 0.2 + Math.random() * 0.6,
-    type: entity.entity_id.startsWith('light.') ? '灯' : (entity.entity_id.startsWith('climate.') ? '空调' : '其他'),
-    label: entity.attributes?.friendly_name || entity.entity_id,
-  }
-  const updated = [...(currentSettings.value.entity_mapping || []), mapping]
-  onMappingUpdate(updated)
-}
-
 const saveSettingsLocal = async (partial) => {
   try {
     await fetch('/api/settings', {
@@ -386,50 +323,6 @@ const statusClass = computed(() => {
   if (haConnected.value && maConnected.value) return 'text-emerald-400'
   if (haConnected.value || maConnected.value) return 'text-yellow-300'
   return 'text-red-400'
-})
-
-const displayTemperature = computed(() => {
-  const value = summary.value.temperature
-  return value === null || value === undefined ? '--' : `${Number(value).toFixed(1)}°C`
-})
-
-const displayHumidity = computed(() => {
-  const value = summary.value.humidity
-  return value === null || value === undefined ? '--' : `${Math.round(Number(value))}%`
-})
-
-const weather = computed(() => summary.value.weather || null)
-
-const weatherText = computed(() => weather.value?.state || '未知')
-const weatherName = computed(() => weather.value?.friendly_name || '天气')
-const weatherTemperature = computed(() => {
-  const value = weather.value?.temperature
-  return value === null || value === undefined ? '--' : `${Number(value).toFixed(1)}°`
-})
-const weatherHumidity = computed(() => {
-  const value = weather.value?.humidity
-  return value === null || value === undefined ? '--' : `${Math.round(Number(value))}%`
-})
-const weatherPrecipitation = computed(() => {
-  const value = weather.value?.precipitation
-  return value === null || value === undefined ? '0 mm' : `${Number(value).toFixed(1)} mm`
-})
-const weatherHumidityPercent = computed(() => {
-  const value = Number(weather.value?.humidity ?? 0)
-  return Math.max(0, Math.min(100, value))
-})
-const weatherPrecipitationPercent = computed(() => {
-  const value = Number(weather.value?.precipitation ?? 0)
-  return Math.max(0, Math.min(100, value * 10))
-})
-
-const weatherEmoji = computed(() => {
-  const state = (weather.value?.state || '').toLowerCase()
-  if (state.includes('rain')) return '🌧️'
-  if (state.includes('cloud')) return '☁️'
-  if (state.includes('sun') || state.includes('clear')) return '☀️'
-  if (state.includes('snow')) return '❄️'
-  return '🌤️'
 })
 
 const updateClock = () => {
@@ -519,12 +412,6 @@ const connectWS = () => {
 
   ws.onopen = () => {
     wsConnected.value = true
-    if (wsHeartbeatTimer) clearInterval(wsHeartbeatTimer)
-    wsHeartbeatTimer = setInterval(() => {
-      if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send('ping')
-      }
-    }, 20000)
   }
 
   ws.onmessage = (event) => {
@@ -559,10 +446,6 @@ const connectWS = () => {
 
   ws.onclose = () => {
     wsConnected.value = false
-    if (wsHeartbeatTimer) {
-      clearInterval(wsHeartbeatTimer)
-      wsHeartbeatTimer = null
-    }
     if (wsReconnectTimer) clearTimeout(wsReconnectTimer)
     wsReconnectTimer = setTimeout(connectWS, 4000)
   }
@@ -583,7 +466,6 @@ const toggleFullscreen = () => {
 onMounted(async () => {
   updateClock()
   clockInterval = setInterval(updateClock, 1000)
-  // Load settings from backend first (persists entity_mapping etc)
   try {
     const r = await fetch('/api/settings')
     if (r.ok) {
@@ -598,7 +480,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (clockInterval) clearInterval(clockInterval)
-  if (wsHeartbeatTimer) clearInterval(wsHeartbeatTimer)
   if (wsReconnectTimer) clearTimeout(wsReconnectTimer)
   if (ws) ws.close()
 })

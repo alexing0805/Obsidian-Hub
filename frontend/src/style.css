@@ -93,15 +93,6 @@ body, button, input, select, textarea {
   filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6));
 }
 
-.status-badge {
-  animation: pulse-op 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse-op {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
 /* 平板触控滚动条优化 */
 ::-webkit-scrollbar {
   width: 6px;
