@@ -12,7 +12,6 @@
       >
         <img src="/icon.jpg" class="w-full h-full object-cover rounded-lg" alt="首页" />
       </button>
-      <img src="/icon.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0" alt="Obsidian Hub" />
 
       <div class="h-6 w-px bg-white/10 mx-1"></div>
  
