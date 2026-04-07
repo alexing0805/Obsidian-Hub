@@ -1,57 +1,49 @@
 <template>
-  <div class="flex flex-col h-full overflow-hidden p-5 space-y-3 min-h-0">
+  <div class="flex flex-col h-full overflow-hidden p-4 space-y-2.5 min-h-0">
 
     <!-- 1. 独立时钟卡片 -->
-    <div class="glass-panel rounded-[2rem] p-5 relative overflow-hidden shrink-0 shadow-xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+    <div class="glass-panel rounded-[1.5rem] p-4 relative overflow-hidden shrink-0 shadow-xl border border-white/10 ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
       <div class="flex flex-col items-center">
-        <div class="text-7xl font-black tracking-tighter font-heading tabular-nums leading-none mb-2 text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{{ currentTime }}</div>
-        <div class="text-xs font-black uppercase tracking-[0.3em] text-white/20">{{ currentDate }}</div>
+        <div class="text-6xl font-black tracking-tighter font-heading tabular-nums leading-none mb-1.5 text-white drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">{{ currentTime }}</div>
+        <div class="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">{{ currentDate }}</div>
       </div>
     </div>
 
     <!-- 2. 气象卡片 -->
     <div v-if="widgets.weather"
-      class="glass-panel rounded-[2rem] p-5 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
+      class="glass-panel rounded-[1.5rem] p-4 relative overflow-hidden group shrink-0 border border-white/5 ring-1 ring-white/10 shadow-lg cursor-pointer active:scale-95 transition-all"
       @click="$emit('open', { type: 'weather', entityId: weatherEntity?.entity_id })"
     >
-      <div class="flex items-center justify-between mb-3">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
           <span class="text-5xl drop-shadow-lg group-hover:scale-105 transition-transform duration-500">{{ weatherEmoji }}</span>
           <div class="flex flex-col">
-            <span class="text-4xl font-heading font-black leading-none text-white tracking-tighter">{{ weatherTemperature }}</span>
-            <span class="text-xs font-black text-cyan-400/60 uppercase tracking-widest">{{ weatherText }}</span>
+            <span class="text-3xl font-heading font-black leading-none text-white tracking-tighter">{{ weatherTemperature }}</span>
+            <span class="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest">{{ weatherText }}</span>
           </div>
         </div>
-        <div class="flex flex-col items-end gap-2">
-          <div class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 flex gap-3 text-xs font-black tabular-nums shadow-inner">
-             <span class="text-red-400">H: {{ weatherHigh }}°</span>
-             <span class="text-blue-400">L: {{ weatherLow }}°</span>
+        <div class="flex flex-col items-end gap-1.5">
+          <div class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex gap-2 text-[11px] font-black tabular-nums shadow-inner">
+             <span class="text-red-400">H:{{ weatherHigh }}°</span>
+             <span class="text-blue-400">L:{{ weatherLow }}°</span>
           </div>
-          <div v-if="weatherHumidity !== '--'" class="text-xs font-black text-white/30 uppercase tracking-wider">湿度 {{ weatherHumidity }}</div>
+          <div v-if="weatherHumidity !== '--'" class="text-[10px] font-black text-white/20 uppercase tracking-wider">湿度 {{ weatherHumidity }}</div>
         </div>
       </div>
-      <div v-if="weatherForecast.length" class="flex gap-2">
-        <div v-for="(fc, idx) in weatherForecast" :key="idx"
-          class="flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl bg-white/5 border border-white/5"
-        >
-          <span class="text-[10px] font-black text-white/30 uppercase">{{ fc.weekday }}</span>
-          <span class="text-2xl leading-none">{{ getFcEmoji(fc.condition) }}</span>
-          <span class="text-xs font-black text-white/60">{{ fc.temp }}°</span>
-        </div>
-      </div>
+      <!-- 预报行已移除，点击后在弹窗查看详情 -->
     </div>
 
     <!-- 3. 自适应功能按键 -->
-    <div class="flex flex-row gap-3 shrink-0">
+    <div class="flex flex-row gap-2.5 shrink-0">
       <template v-for="btn in activeStatusButtons" :key="btn.id">
         <div
-          class="glass-panel flex-1 flex flex-col items-center justify-center py-5 rounded-[2rem] card-hover cursor-pointer border-white/5 ring-1 ring-white/5 relative group transition-all min-w-0 shadow-md"
+          class="glass-panel flex-1 flex flex-col items-center justify-center py-3.5 rounded-[1.5rem] card-hover cursor-pointer border-white/5 ring-1 ring-white/5 relative group transition-all min-w-0 shadow-md"
           @click="$emit('open', { type: btn.id, entityId: null })"
         >
-          <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-500">{{ btn.icon }}</div>
-          <div class="text-base font-black leading-none mb-1" :class="btn.valueClass">{{ btn.value }}</div>
-          <div class="text-[9px] font-black uppercase tracking-wider text-white/20">{{ btn.label }}</div>
-          <div v-if="btn.active" class="absolute top-3 right-3 w-2 h-2 rounded-full animate-pulse shadow-sm" :class="btn.indicatorClass"></div>
+          <div class="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-500">{{ btn.icon }}</div>
+          <div class="text-sm font-black leading-none mb-0.5" :class="btn.valueClass">{{ btn.value }}</div>
+          <div class="text-[8px] font-black uppercase tracking-wider text-white/20">{{ btn.label }}</div>
+          <div v-if="btn.active" class="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full animate-pulse shadow-sm" :class="btn.indicatorClass"></div>
         </div>
       </template>
     </div>
