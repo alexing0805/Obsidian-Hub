@@ -3,20 +3,15 @@
 
     <!-- 顶部导航栏 -->
     <header class="glass-effect border-b border-white/10 px-6 py-3 flex items-center gap-4 shrink-0 z-30">
-      <!-- 返回主页按钮 -->
+      <!-- 首页图标按钮 -->
       <button
-        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
-        :class="currentTab !== 'overview' ? 'bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 ring-1 ring-cyan-500/30' : 'text-white/20 cursor-default'"
-        :disabled="currentTab === 'overview'"
+        class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 overflow-hidden"
+        :class="currentTab !== 'overview' ? 'ring-1 ring-white/20 hover:ring-white/40' : 'ring-1 ring-cyan-500/50'"
         @click="currentTab = 'overview'"
         title="首页"
       >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
+        <img src="/icon.jpg" class="w-full h-full object-cover rounded-lg" alt="首页" />
       </button>
- 
-      <!-- 项目图标 -->
       <img src="/icon.jpg" class="w-8 h-8 rounded-lg object-cover shrink-0" alt="Obsidian Hub" />
 
       <div class="h-6 w-px bg-white/10 mx-1"></div>
@@ -158,7 +153,6 @@ import DetailOverlay from './components/DetailOverlay.vue'
 import FloorPlanView from './components/FloorPlanView.vue'
 
 const mainTabs = [
-  { id: 'overview', label: '总览', icon: '🏠' },
   { id: 'security', label: '安防', icon: '🔒' },
   { id: 'media', label: '影音', icon: '🎬' },
   { id: 'settings', label: '系统设置', icon: '⚙️' }
