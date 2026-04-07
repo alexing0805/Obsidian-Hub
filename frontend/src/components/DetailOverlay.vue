@@ -112,77 +112,112 @@
         </div>
 
         <!-- 窗帘详情 -->
-        <div v-if="type === 'cover'">
-          <div v-if="displayCovers.length" class="space-y-6 animate-fade-in py-2">
-            <div v-for="cover in displayCovers" :key="cover.entity_id"
-              class="glass-panel rounded-[3rem] p-10 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden">
+        <div v-if="type === 'cover'" class="max-w-xl mx-auto">
+          <div v-if="coverEntity" class="space-y-8 animate-fade-in">
+            <div class="text-center">
+              <div class="w-20 h-20 bg-blue-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-4 border border-blue-500/30">
+                <IconCover class="w-10 h-10 text-blue-400" />
+              </div>
+              <h2 class="text-2xl font-black text-white tracking-tight leading-none">{{ coverEntity.attributes?.friendly_name }}</h2>
+              <p class="text-[10px] font-black text-blue-400/60 uppercase tracking-[0.4em] mt-2">{{ coverEntity.state === 'open' ? '已开启' : '已关闭' }}</p>
+            </div>
 
-              <div class="flex items-center justify-between mb-10">
-                <div>
-                  <div class="text-3xl font-black tracking-tight text-white/90">{{ cover.attributes?.friendly_name || '窗帘' }}</div>
-                  <div class="text-sm font-bold uppercase tracking-[0.3em] text-cyan-400/60 mt-2">{{ cover.state }}</div>
+            <div class="grid grid-cols-3 gap-6">
+              <button @click="onCoverAction('open_cover')" 
+                class="flex flex-col items-center gap-3 p-6 rounded-[2rem] glass-panel border border-white/5 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all group active:scale-95">
+                <div class="w-12 h-12 flex items-center justify-center bg-white/5 rounded-full group-hover:text-blue-400 transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
                 </div>
-                <div class="text-5xl">🪟</div>
-              </div>
-
-              <div class="grid grid-cols-3 gap-6 mb-12">
-                <button @click="$emit('cover-action', { entity: cover, action: 'open_cover' })"
-                  class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">🔼</div>
-                  <span class="text-xs font-black uppercase tracking-widest text-white/40">OPEN</span>
-                </button>
-                <button @click="$emit('cover-action', { entity: cover, action: 'stop_cover' })"
-                  class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">⏹️</div>
-                  <span class="text-xs font-black uppercase tracking-widest text-white/40">STOP</span>
-                </button>
-                <button @click="$emit('cover-action', { entity: cover, action: 'close_cover' })"
-                  class="aspect-square rounded-[2rem] flex flex-col items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all group">
-                  <div class="text-5xl mb-3 group-hover:scale-110 transition-transform">🔽</div>
-                  <span class="text-xs font-black uppercase tracking-widest text-white/40">CLOSE</span>
-                </button>
-              </div>
-
-              <div v-if="cover.attributes?.current_position !== undefined" class="space-y-4 px-4">
-                <div class="flex justify-between items-end">
-                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.5em]">当前位置</div>
-                  <div class="text-3xl font-black text-cyan-400 tabular-nums">{{ cover.attributes.current_position }}%</div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white">开启</span>
+              </button>
+              
+              <button @click="onCoverAction('stop_cover')" 
+                class="flex flex-col items-center gap-3 p-6 rounded-[2rem] glass-panel border border-white/5 hover:border-white/40 hover:bg-white/15 transition-all group active:scale-95">
+                <div class="w-12 h-12 flex items-center justify-center bg-white/5 rounded-full group-hover:text-white transition-colors">
+                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
                 </div>
-                <input type="range" min="0" max="100" step="1"
-                  :value="cover.attributes.current_position"
-                  class="w-full h-3 bg-white/10 rounded-full appearance-none cursor-pointer accent-cyan-400"
-                  @change="$emit('cover-action', { entity: cover, action: 'set_cover_position', value: $event.target.value })" />
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white">停止</span>
+              </button>
+
+              <button @click="onCoverAction('close_cover')" 
+                class="flex flex-col items-center gap-3 p-6 rounded-[2rem] glass-panel border border-white/5 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all group active:scale-95">
+                <div class="w-12 h-12 flex items-center justify-center bg-white/5 rounded-full group-hover:text-blue-400 transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-white">关闭</span>
+              </button>
+            </div>
+
+            <div class="glass-panel p-6 rounded-[2rem] border border-white/5 bg-white/5">
+              <div class="flex justify-between items-center mb-4">
+                <span class="text-[10px] font-black text-white/30 uppercase tracking-[0.2em]">当前位置</span>
+                <span class="text-2xl font-black text-blue-400 tabular-nums">{{ coverPosition }}%</span>
               </div>
+              <input type="range" min="0" max="100" v-model="coverPosition" 
+                class="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-blue-500 hover:h-2 transition-all"
+                @change="onCoverPositionChange" />
             </div>
           </div>
         </div>
 
-        <!-- 天气详情 -->
+        <!-- 天气详情 (和风天气重构) -->
         <div v-if="type === 'weather'">
-          <div v-if="weatherEntity" class="space-y-4 py-2 animate-fade-in relative z-10">
-            <div class="text-center py-2">
-              <div class="text-4xl mb-2 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
-              <div class="text-3xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
-              <div class="text-lg font-black text-cyan-400 mt-1 uppercase tracking-[0.4em]">{{ weatherText }}</div>
-              <div class="text-[9px] font-bold text-white/20 mt-0.5 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
-            </div>
-            <div class="grid grid-cols-4 gap-3 px-2">
-              <div v-for="attr in weatherAttrs" :key="attr.key"
-                class="glass-panel rounded-xl p-3 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
-                <div class="text-[9px] font-black text-white/20 uppercase mb-1 tracking-widest">{{ attr.label }}</div>
-                <div class="text-base font-black text-white/90">{{ attr.value }}</div>
+          <div v-if="weatherEntity" class="animate-fade-in relative z-10 space-y-4">
+            <div class="flex items-center justify-between bg-white/5 rounded-[2rem] p-6 border border-white/10 shadow-inner">
+              <div class="flex items-center gap-6">
+                <div class="text-7xl animate-bounce-subtle">{{ weatherEmoji }}</div>
+                <div class="flex flex-col">
+                  <div class="text-3xl font-black text-white leading-tight">{{ weatherText }}</div>
+                  <div class="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mt-1">和风天气 • 刚刚更新</div>
+                </div>
+              </div>
+              <div class="flex flex-col items-end">
+                <div class="text-5xl font-black text-white tracking-tighter leading-none mb-1">{{ weatherTemperature }}</div>
+                <div class="flex gap-2 text-[11px] font-black uppercase tracking-wider">
+                  <span class="text-blue-400">L:{{ weatherLow }}°</span>
+                  <span class="text-white/20">|</span>
+                  <span class="text-red-400">H:{{ weatherHigh }}°</span>
+                </div>
               </div>
             </div>
-            <div v-if="sidebarForecast.length" class="space-y-2 px-1 pt-3 border-t border-white/5">
-              <div class="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7日天气预报</div>
-              <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hidden">
-                <div v-for="(fc, idx) in sidebarForecast" :key="idx"
-                  class="flex-shrink-0 w-24 glass-panel p-3 rounded-xl flex flex-col items-center border border-white/5">
-                  <span class="text-[9px] font-black text-white/30 uppercase mb-1.5">{{ fc.weekday }}</span>
-                  <span class="text-2xl mb-1.5 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
-                  <div class="flex flex-col items-center">
-                    <span class="text-base font-black text-white">{{ fc.temp }}°</span>
+
+            <div class="grid grid-cols-4 gap-3">
+              <div v-for="attr in weatherAttrs" :key="attr.key" 
+                class="glass-panel p-3.5 rounded-2xl flex flex-col items-center justify-center border border-white/5 bg-white/5">
+                <div class="text-xl mb-1 opacity-80">{{ attr.icon }}</div>
+                <div class="text-[9px] font-black text-white/20 uppercase tracking-widest mb-0.5">{{ attr.label }}</div>
+                <div class="text-sm font-black text-white">{{ attr.value }}</div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-1 p-1 bg-black/20 rounded-xl w-fit mx-auto border border-white/5">
+                <button v-for="mode in ['daily', 'hourly']" :key="mode"
+                  @click="forecastMode = mode"
+                  class="px-5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                  :class="forecastMode === mode ? 'bg-white/10 text-cyan-400 shadow-lg' : 'text-white/40 hover:text-white/60'">
+                  {{ mode === 'daily' ? '每日' : '每小时' }}
+                </button>
+              </div>
+
+              <div v-if="forecastMode === 'daily'" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hidden">
+                <div v-for="(fc, idx) in forecastList" :key="idx" 
+                  class="flex-shrink-0 w-24 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5 bg-gradient-to-b from-white/5 to-transparent">
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-2 tracking-wider">{{ fc.weekday }}</span>
+                  <span class="text-3xl mb-3">{{ getFcEmoji(fc.condition) }}</span>
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span class="text-sm font-black text-white">{{ Math.round(fc.temp) }}°</span>
+                    <span class="text-[10px] font-bold text-white/20">{{ Math.round(fc.templow) }}°</span>
                   </div>
+                </div>
+              </div>
+
+              <div v-else class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hidden">
+                <div v-for="(fc, idx) in hourlyForecast" :key="idx" 
+                  class="flex-shrink-0 w-20 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5 bg-gradient-to-b from-white/5 to-transparent">
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-2 tracking-wider">{{ fc.hour }}</span>
+                  <span class="text-2xl mb-2">{{ getFcEmoji(fc.condition) }}</span>
+                  <span class="text-sm font-black text-white">{{ Math.round(fc.temp) }}°</span>
                 </div>
               </div>
             </div>
@@ -196,27 +231,21 @@
               class="glass-effect rounded-2xl p-5 flex flex-col items-center gap-3 border"
               :class="parseFloat(battery.state) <= 10 ? 'border-red-500/40 bg-red-500/5' : 'border-yellow-500/40 bg-yellow-500/5'">
               <div class="text-4xl">{{ parseFloat(battery.state) <= 10 ? '🔴' : '🟡' }}</div>
-              <div class="text-sm text-center text-white/70 truncate w-full">
-                {{ battery.attributes?.friendly_name || battery.entity_id }}
-              </div>
-              <div class="text-xl font-black" :class="parseFloat(battery.state) <= 10 ? 'text-red-400' : 'text-yellow-400'">
-                {{ battery.state }}%
-              </div>
+              <div class="text-sm text-center text-white/70 truncate w-full">{{ battery.attributes?.friendly_name || battery.entity_id }}</div>
+              <div class="text-xl font-black text-white">{{ battery.state }}%</div>
             </div>
           </div>
           <div v-if="!lowBatteryEntities.length" class="text-center text-white/30 py-16">所有设备电量正常</div>
         </div>
 
-        <!-- 离线设备详情 -->
+        <!-- 离线详情 -->
         <div v-if="type === 'offline'">
           <div class="grid grid-cols-2 gap-4">
             <div v-for="entity in offlineEntities" :key="entity.entity_id"
               class="glass-effect rounded-2xl p-5 flex items-center gap-4 border border-orange-500/20 bg-orange-500/5">
               <div class="text-3xl">📡</div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm text-white/70 truncate">
-                  {{ entity.attributes?.friendly_name || entity.entity_id }}
-                </div>
+                <div class="text-sm text-white/70 truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</div>
                 <div class="text-xs text-orange-400/60 uppercase">{{ entity.state }}</div>
               </div>
             </div>
@@ -235,7 +264,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, h } from 'vue'
 import MusicAssistantPlayer from './MusicAssistantPlayer.vue'
 
 const props = defineProps({
@@ -245,9 +274,16 @@ const props = defineProps({
   maState: { type: Object, default: () => ({}) },
   weatherEntityId: { type: String, default: '' },
   weatherForecast: { type: Array, default: () => [] },
+  summary: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['close', 'toggle-light', 'climate-action', 'cover-action'])
+
+const IconCover = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }),
+  h('path', { d: 'M9 3v18' }),
+  h('path', { d: 'M15 3v18' })
+])
 
 const titleMap = {
   lights: { icon: '💡', text: 'LIGHTING' },
@@ -273,11 +309,11 @@ const displayClimates = computed(() => {
   return all
 })
 
-const displayCovers = computed(() => {
-  const all = props.haEntities.filter(e => e.entity_id.startsWith('cover.'))
-  if (props.entityId) return all.filter(e => e.entity_id === props.entityId)
-  return all
-})
+const coverEntity = computed(() => props.haEntities.find(e => e.entity_id === props.entityId))
+const coverPosition = ref(0)
+watch(() => coverEntity.value?.attributes?.current_position, (val) => {
+  if (val !== undefined) coverPosition.value = val
+}, { immediate: true })
 
 const lowBatteryEntities = computed(() =>
   props.haEntities.filter(e => {
@@ -297,8 +333,11 @@ const weatherEntity = computed(() =>
 )
 const weatherTemperature = computed(() => {
   const v = weatherEntity.value?.attributes?.temperature
-  return v !== undefined && v !== null ? `${Number(v).toFixed(1)}°` : '--'
+  return v !== undefined && v !== null ? `${Math.round(Number(v))}°` : '--'
 })
+const weatherLow = computed(() => Math.round(weatherEntity.value?.attributes?.forecast?.[0]?.templow || 0))
+const weatherHigh = computed(() => Math.round(weatherEntity.value?.attributes?.forecast?.[0]?.temperature || 0))
+
 const weatherEmoji = computed(() => {
   const s = (weatherEntity.value?.state || '').toLowerCase()
   if (s.includes('rain')) return '🌧️'
@@ -308,26 +347,51 @@ const weatherEmoji = computed(() => {
   if (s.includes('fog') || s.includes('mist')) return '🌫️'
   return '🌤️'
 })
+
 const weatherText = computed(() => {
   const s = (weatherEntity.value?.state || '').toLowerCase()
   const map = {
-    'sunny': '晴朗', 'clear-night': '晴朗夜间', 'cloudy': '多云', 'partlycloudy': '阴天',
-    'rainy': '有雨', 'pouring': '大雨', 'snowy': '有雪', 'fog': '有雾', 'mist': '薄雾',
-    'thunderstorm': '雷阵雨', 'windy': '刮风', 'hail': '冰雹'
+    'sunny': '晴朗',
+    'clear-night': '晴朗',
+    'cloudy': '多云',
+    'partlycloudy': '阴',
+    'rainy': '雨',
+    'snowy': '雪',
+    'fog': '雾',
+    'windy': '大风'
   }
   return map[s] || s.toUpperCase()
 })
+
+const forecastMode = ref('daily')
 const weatherAttrs = computed(() => {
-  const a = weatherEntity.value?.attributes || {}
-  const attrs = []
-  if (a.humidity !== undefined) attrs.push({ key: 'hum', label: '湿度', value: Math.round(a.humidity) + '%' })
-  if (a.pressure !== undefined) attrs.push({ key: 'press', label: '气压', value: a.pressure + ' hPa' })
-  if (a.wind_speed !== undefined) attrs.push({ key: 'wind', label: '风速', value: a.wind_speed + ' m/s' })
-  if (a.visibility !== undefined) attrs.push({ key: 'vis', label: '能见度', value: (a.visibility / 1000).toFixed(1) + ' km' })
-  if (a.apparent_temperature !== undefined) attrs.push({ key: 'feels', label: '体感温度', value: Math.round(a.apparent_temperature) + '°' })
-  if (a.uv_index !== undefined) attrs.push({ key: 'uv', label: '户外指数', value: a.uv_index })
-  if (a.cloud_coverage !== undefined) attrs.push({ key: 'cloud', label: '云量', value: a.cloud_coverage + '%' })
-  return attrs
+  if (!weatherEntity.value) return []
+  const attrs = weatherEntity.value.attributes || {}
+  return [
+    { key: 'pressure', label: '气压', value: `${attrs.pressure || '--'} hPa`, icon: '⏲️' },
+    { key: 'humidity', label: '湿度', value: `${attrs.humidity || '--'}%`, icon: '💧' },
+    { key: 'wind_speed', label: '风速', value: `${attrs.wind_speed || '--'} km/h`, icon: '🌬️' },
+    { key: 'visibility', label: '能见度', value: `${attrs.visibility || '--'} km`, icon: '👁️' },
+  ]
+})
+
+const forecastList = computed(() => {
+  const fc = props.summary?.weather?.forecast || weatherEntity.value?.attributes?.forecast || []
+  return fc.map(item => ({
+    weekday: item.datetime ? new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }) : '?',
+    condition: item.condition,
+    temp: item.temperature,
+    templow: item.templow || item.temperature_low || '--'
+  }))
+})
+
+const hourlyForecast = computed(() => {
+  const fc = props.summary?.weather?.hourly_forecast || []
+  return fc.slice(0, 24).map(item => ({
+    hour: item.datetime ? new Date(item.datetime).getHours() + '时' : '?',
+    condition: item.condition,
+    temp: item.temperature
+  }))
 })
 
 const getFcEmoji = (cond) => {
@@ -336,25 +400,8 @@ const getFcEmoji = (cond) => {
   if (s.includes('cloud')) return '☁️'
   if (s.includes('sun') || s.includes('clear')) return '☀️'
   if (s.includes('snow')) return '❄️'
-  if (s.includes('fog') || s.includes('mist')) return '🌫️'
   return '🌤️'
 }
-
-const sidebarForecast = computed(() => {
-  const fc = props.weatherForecast || []
-  return fc.slice(0, 10).map(item => {
-    try {
-      const dt = new Date(item.datetime)
-      return {
-        weekday: dt.toLocaleDateString('zh-CN', { weekday: 'short' }),
-        condition: item.condition,
-        temp: Math.round(item.temperature)
-      }
-    } catch(e) {
-      return { weekday: '?', condition: '', temp: '--' }
-    }
-  })
-})
 
 const getHvacModes = (climate) => {
   const modes = climate.attributes?.hvac_modes || ['off', 'heat', 'cool', 'auto', 'dry', 'fan_only']
@@ -377,6 +424,15 @@ const toggleLight = (entity) => emit('toggle-light', entity)
 const setTemp = (entity, temp) => emit('climate-action', { entity, action: 'temp', value: temp })
 const setMode = (entity, mode) => emit('climate-action', { entity, action: 'mode', value: mode })
 const setFanMode = (entity, fan) => emit('climate-action', { entity, action: 'fan', value: fan })
+const onCoverAction = (service) => {
+  if (!coverEntity.value) return
+  emit('cover-action', { service, entityId: coverEntity.value.entity_id })
+}
+const onCoverPositionChange = () => {
+  if (!coverEntity.value) return
+  emit('cover-action', { service: 'set_cover_position', entityId: coverEntity.value.entity_id, data: { position: parseInt(coverPosition.value) } })
+}
+
 </script>
 
 <style scoped>

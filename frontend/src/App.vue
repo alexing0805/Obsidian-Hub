@@ -108,6 +108,7 @@
       :entity-id="activeDetail.entityId"
       :ha-entities="filteredEntities"
       :ma-state="maState"
+      :summary="summary"
       :weather-entity-id="currentSettings.weather_entity_id || ''"
       :weather-forecast="summary.weather?.forecast || []"
       @close="activeDetail = { type: null, entityId: null }"
@@ -242,16 +243,30 @@ const onClimateAction = async ({ entity, action, value }) => {
   }
 }
 
-const onCoverAction = async ({ entity, action, value }) => {
-  const payload = { domain: 'cover', service: action, entity_id: entity.entity_id }
-  if (value !== undefined) {
-    payload.service_data = { position: parseInt(value) }
+const onCoverAction = async (payload) => {
+  let haPayload
+  if (payload.service && payload.entityId) {
+    // New structured payload
+    haPayload = { 
+      domain: 'cover', 
+      service: payload.service, 
+      entity_id: payload.entityId,
+      service_data: payload.data || {}
+    }
+  } else {
+    // Legacy payload { entity, action, value }
+    const { entity, action, value } = payload
+    haPayload = { domain: 'cover', service: action, entity_id: entity.entity_id }
+    if (value !== undefined) {
+      haPayload.service_data = { position: parseInt(value) }
+    }
   }
+
   try {
     await fetch('/api/ha/service', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(haPayload)
     })
   } catch (e) {
     console.error('Cover action failed:', e)

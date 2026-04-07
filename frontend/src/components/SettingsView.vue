@@ -14,7 +14,7 @@
     </div>
 
     <!-- 内容区（可滚动） -->
-    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0 h-full">
 
       <!-- 连接设置 -->
       <template v-if="currentTab === 'connection'">
@@ -216,8 +216,8 @@
         </div>
       </template>
 
-      <!-- 实体映射（3D视图） -->
-      <template v-if="currentTab === 'lights'">
+      <!-- 户型图设置 (Floor Plan) -->
+      <template v-if="currentTab === 'floorplan'">
         <div class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-2">🗺️ 3D 视图实体映射</div>
           <div class="text-xs text-white/40 mb-3">拖拽编辑模式下可在视图里自由放置位置，点击切换状态</div>
@@ -308,7 +308,7 @@ const emit = defineEmits(['save', 'restart', 'toggle-sidebar', 'settings-loaded'
 const tabs = [
   { id: 'connection', label: '连接', icon: '🔗' },
   { id: 'display', label: '显示', icon: '🖥️' },
-  { id: 'lights', label: '灯光', icon: '💡' },
+  { id: 'floorplan', label: '户型图', icon: '🏠' },
   { id: 'system', label: '系统', icon: 'ℹ️' },
 ]
 

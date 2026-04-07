@@ -12,10 +12,10 @@
             @click="showSelector = !showSelector"
           >
             <div class="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)] shrink-0" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
-            <span class="text-sm font-bold text-white/70 uppercase tracking-tight truncate flex-1">
-              {{ activePlayerName || '选择播放器' }}
-            </span>
-            <span class="text-xs text-white/20 group-hover/btn:text-white/40 transition-colors shrink-0">▼</span>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-black text-cyan-400/80 uppercase tracking-widest leading-none mb-1">Playing on</span>
+              <span class="text-sm font-bold text-white truncate max-w-[140px]">{{ activePlayerName || 'Select Player' }}</span>
+            </div>
           </button>
 
           <div v-if="showSelector" class="absolute left-0 top-full mt-2 w-full z-50 bg-neutral-900/98 backdrop-blur-3xl rounded-2xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] py-2 max-h-[280px] overflow-y-auto animate-fade-in ring-1 ring-white/5">

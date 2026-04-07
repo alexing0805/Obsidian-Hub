@@ -80,6 +80,7 @@ const widgets = computed(() => ({
   climate: props.sidebarWidgets.climate !== false,
   battery: props.sidebarWidgets.battery !== false,
   offline: props.sidebarWidgets.offline !== false,
+  curtains: true,
   music: props.sidebarWidgets.music !== false,
 }))
 
@@ -149,9 +150,22 @@ const activeStatusButtons = computed(() => {
   if (widgets.value.climate) {
     btns.push({
       id: 'climate', label: 'Climate', icon: '❄️',
-      value: props.summary.climate_total || 0,
+      value: props.summary.climate_active || 0,
+      valueClass: 'text-cyan-400',
+      active: (props.summary.climate_active || 0) > 0,
+      indicatorClass: 'bg-cyan-400'
+    })
+  }
+
+  if (widgets.value.curtains) {
+    // 自动计算窗帘状态
+    const covers = props.haEntities.filter(e => e.entity_id.startsWith('cover.'))
+    const openCovers = covers.filter(e => e.state === 'open').length
+    btns.push({
+      id: 'curtains', label: 'Curtains', icon: '🪟',
+      value: `${openCovers}/${covers.length}`,
       valueClass: 'text-blue-400',
-      active: (props.summary.climate_total || 0) > 0,
+      active: openCovers > 0,
       indicatorClass: 'bg-blue-400'
     })
   }
