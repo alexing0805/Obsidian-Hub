@@ -230,6 +230,22 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, An
         "weather": None,
     }
 
+    if weather_entity:
+        weather_attrs = weather_entity.get("attributes", {})
+        summary["weather"] = {
+            "entity_id": weather_entity.get("entity_id"),
+            "state": weather_entity.get("state"),
+            "temperature": weather_attrs.get("temperature"),
+            "humidity": weather_attrs.get("humidity"),
+            "pressure": weather_attrs.get("pressure"),
+            "wind_speed": weather_attrs.get("wind_speed"),
+            "visibility": weather_attrs.get("visibility"),
+            "temperature_high": weather_attrs.get("temperature_high") or weather_attrs.get("temp_high"),
+            "temperature_low": weather_attrs.get("temperature_low") or weather_attrs.get("temp_low") or weather_attrs.get("templow"),
+            "forecast": forecast_data.get("daily", []) if forecast_data else [],
+            "hourly_forecast": forecast_data.get("hourly", []) if forecast_data else [],
+        }
+
     return summary
 
 

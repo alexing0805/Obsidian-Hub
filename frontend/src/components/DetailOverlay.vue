@@ -335,8 +335,16 @@ const weatherTemperature = computed(() => {
   const v = weatherEntity.value?.attributes?.temperature
   return v !== undefined && v !== null ? `${Math.round(Number(v))}°` : '--'
 })
-const weatherLow = computed(() => Math.round(weatherEntity.value?.attributes?.forecast?.[0]?.templow || 0))
-const weatherHigh = computed(() => Math.round(weatherEntity.value?.attributes?.forecast?.[0]?.temperature || 0))
+const weatherLow = computed(() => {
+  const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
+  const val = fc0?.templow ?? fc0?.temperature_low ?? 0
+  return Math.round(val)
+})
+const weatherHigh = computed(() => {
+  const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
+  const val = fc0?.temperature ?? fc0?.temp_high ?? 0
+  return Math.round(val)
+})
 
 const weatherEmoji = computed(() => {
   const s = (weatherEntity.value?.state || '').toLowerCase()
@@ -377,12 +385,16 @@ const weatherAttrs = computed(() => {
 
 const forecastList = computed(() => {
   const fc = props.summary?.weather?.forecast || weatherEntity.value?.attributes?.forecast || []
-  return fc.map(item => ({
-    weekday: item.datetime ? new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }) : '?',
-    condition: item.condition,
-    temp: item.temperature,
-    templow: item.templow || item.temperature_low || '--'
-  }))
+  return fc.map(item => {
+    const tempHigh = item.temperature ?? item.temp_high ?? item.max_temp ?? 0
+    const tempLow = item.templow ?? item.temperature_low ?? item.min_temp ?? 0
+    return {
+      weekday: item.datetime ? new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }) : '?',
+      condition: item.condition,
+      temp: Math.round(tempHigh),
+      templow: Math.round(tempLow)
+    }
+  })
 })
 
 const hourlyForecast = computed(() => {
@@ -390,7 +402,7 @@ const hourlyForecast = computed(() => {
   return fc.slice(0, 24).map(item => ({
     hour: item.datetime ? new Date(item.datetime).getHours() + '时' : '?',
     condition: item.condition,
-    temp: item.temperature
+    temp: Math.round(item.temperature ?? item.temp ?? 0)
   }))
 })
 

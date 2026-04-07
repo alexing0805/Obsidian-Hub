@@ -13,8 +13,8 @@
           >
             <div class="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)] shrink-0" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
             <div class="flex flex-col min-w-0">
-              <span class="text-xs font-black text-cyan-400/80 uppercase tracking-widest leading-none mb-1">Playing on</span>
-              <span class="text-sm font-bold text-white truncate max-w-[140px]">{{ activePlayerName || 'Select Player' }}</span>
+              <span class="text-[10px] font-black text-cyan-400/80 uppercase tracking-widest leading-none mb-1">Playing on</span>
+              <span class="text-xs font-bold text-white truncate max-w-[120px]">{{ activePlayerName || 'Select Player' }}</span>
             </div>
           </button>
 
@@ -31,7 +31,7 @@
             <div v-if="!(maState.players || []).length" class="px-4 py-3 text-sm text-white/30 italic">No players available</div>
           </div>
         </div>
-        <span class="text-xs text-white/20 font-black uppercase tracking-[0.1em] truncate max-w-[60px] bg-white/5 px-2 py-1 rounded-md border border-white/5 shrink-0">{{ queueLabel }}</span>
+        <!-- 移除冗余的 queueLabel span，用户认为显示重复 -->
       </div>
 
       <!-- 2. 封面图（响应式，最大 180px） -->
