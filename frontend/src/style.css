@@ -1,6 +1,6 @@
-/* 思源黑体（国内 CDN）+ Outfit（英文字体） */
-@import url('https://cdn.staticfile.org/fontsource/5.0.15/outfit@700/normal');
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+/* 字体由 @fontsource 包本地提供，无需 CDN */
+@import '@fontsource/outfit';
+@import '@fontsource/noto-sans-sc';
 
 @tailwind base;
 @tailwind components;

@@ -8,6 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/noto-sans-sc": "^5.0.19",
+    "@fontsource/outfit": "^5.0.19",
     "axios": "^1.6.2",
     "vue": "^3.4.0",
     "vue-router": "^4.2.5"
