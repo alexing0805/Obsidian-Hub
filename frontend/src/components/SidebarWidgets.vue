@@ -22,12 +22,13 @@
             <span class="text-[10px] font-black text-cyan-400/60 uppercase tracking-widest">{{ weatherText }}</span>
           </div>
         </div>
-        <div class="flex flex-col items-end gap-1.5">
-          <div class="px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 flex gap-2 text-[11px] font-black tabular-nums shadow-inner">
-             <span class="text-red-400">H:{{ weatherHigh }}°</span>
-             <span class="text-blue-400">L:{{ weatherLow }}°</span>
+        <div class="flex flex-col items-end gap-1">
+          <div class="flex gap-1.5 text-xs font-black tabular-nums">
+             <span class="text-blue-400">{{ weatherLow }}°</span>
+             <span class="text-white/20">/</span>
+             <span class="text-red-400">{{ weatherHigh }}°</span>
           </div>
-          <div v-if="weatherHumidity !== '--'" class="text-[10px] font-black text-white/20 uppercase tracking-wider">湿度 {{ weatherHumidity }}</div>
+          <div v-if="weatherHumidity !== '--'" class="text-[9px] font-bold text-white/20 uppercase tracking-widest">湿度 {{ weatherHumidity }}</div>
         </div>
       </div>
       <!-- 预报行已移除，点击后在弹窗查看详情 -->

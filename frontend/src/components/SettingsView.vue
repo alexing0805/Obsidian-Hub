@@ -13,8 +13,8 @@
       </button>
     </div>
 
-    <!-- 内容区（可滚动） -->
-    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-0 h-full">
+    <!-- 内容区（强制纵向可滚动容器） -->
+    <div class="flex-1 overflow-y-auto px-4 py-4 space-y-5 min-h-0">
 
       <!-- 连接设置 -->
       <template v-if="currentTab === 'connection'">
@@ -485,10 +485,20 @@ onMounted(loadSettings)
 
 <style scoped>
 .settings-input {
-  @apply bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-white;
-  @apply focus:outline-none focus:border-cyan-500/50 focus:bg-white/10 transition-colors;
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  color: white;
+  outline: none;
+  transition: all 0.2s ease;
 }
-.settings-input::placeholder { @apply text-white/25; }
+.settings-input:focus {
+  border-color: rgba(6, 182, 212, 0.5);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.settings-input::placeholder { color: rgba(255, 255, 255, 0.25); }
 .settings-view { color: white; }
 .settings-view ::-webkit-scrollbar { width: 4px; }
 .settings-view ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
