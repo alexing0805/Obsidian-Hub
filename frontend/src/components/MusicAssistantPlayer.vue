@@ -13,8 +13,7 @@
           >
             <div class="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(52,211,153,0.5)] shrink-0" :class="maConnected ? 'bg-emerald-400 animate-pulse' : 'bg-red-500'"></div>
             <div class="flex flex-col min-w-0">
-              <span class="text-[10px] font-black text-cyan-400/80 uppercase tracking-widest leading-none mb-1">Playing on</span>
-              <span class="text-xs font-bold text-white truncate max-w-[120px]">{{ activePlayerName || 'Select Player' }}</span>
+              <span class="text-sm font-bold text-white truncate max-w-[160px]">{{ activePlayerName || 'Select Player' }}</span>
             </div>
           </button>
 

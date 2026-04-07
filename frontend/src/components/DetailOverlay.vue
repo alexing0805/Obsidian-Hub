@@ -173,10 +173,10 @@
               </div>
               <div class="flex flex-col items-end">
                 <div class="text-5xl font-black text-white tracking-tighter leading-none mb-1">{{ weatherTemperature }}</div>
-                <div class="flex gap-2 text-[11px] font-black uppercase tracking-wider">
-                  <span class="text-blue-400">L:{{ weatherLow }}°</span>
-                  <span class="text-white/20">|</span>
-                  <span class="text-red-400">H:{{ weatherHigh }}°</span>
+                <div class="flex gap-1 text-sm font-black tabular-nums">
+                  <span class="text-blue-400">{{ weatherLow }}°</span>
+                  <span class="text-white/40">/</span>
+                  <span class="text-red-400">{{ weatherHigh }}°</span>
                 </div>
               </div>
             </div>
