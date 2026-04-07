@@ -1,11 +1,11 @@
 <template>
   <div class="p-1 flex flex-col min-h-0 h-full overflow-y-auto">
-    <div class="glass-panel rounded-[2rem] p-5 flex flex-col h-full min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
+    <div class="glass-panel rounded-[1.5rem] p-3.5 flex flex-col h-full min-h-0 relative overflow-hidden group shadow-2xl ring-1 ring-white/10 bg-gradient-to-br from-white/10 to-transparent">
 
       <div v-if="playState === 'playing'" class="absolute inset-0 bg-cyan-500/5 blur-3xl -z-10 animate-pulse transition-opacity duration-1000"></div>
 
       <!-- 1. 顶部：播放器选择 + 状态 -->
-      <div class="flex items-center justify-between gap-3 mb-4 relative z-10 shrink-0">
+      <div class="flex items-center justify-between gap-2 mb-3 relative z-10 shrink-0">
         <div class="relative flex-1 min-w-0">
           <button
             class="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left w-full group/btn"
@@ -35,8 +35,8 @@
       </div>
 
       <!-- 2. 封面图（响应式，最大 180px） -->
-      <div class="flex justify-center mb-4 shrink-0">
-        <div class="w-full max-w-[180px] aspect-square rounded-[1.5rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
+      <div class="flex justify-center mb-3 shrink-0">
+        <div class="w-full max-w-[150px] aspect-square rounded-[1.2rem] overflow-hidden relative shadow-2xl ring-2 ring-white/10 bg-black/40 group-hover:scale-105 transition-transform duration-500">
           <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover transition-opacity duration-700" :class="artworkUrl ? 'opacity-100' : 'opacity-20'" />
           <div v-if="playState === 'playing'" class="absolute bottom-3 right-3 p-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
              <div class="flex gap-0.5 items-end h-4 w-4 justify-center">
@@ -49,13 +49,13 @@
       </div>
 
       <!-- 3. 曲目信息 -->
-      <div class="text-center mb-4 shrink-0 px-2">
+      <div class="text-center mb-3 shrink-0 px-2">
         <h3 class="font-black text-base leading-tight text-white mb-1.5 tracking-tight group-hover:text-cyan-400 transition-colors line-clamp-1">{{ trackName || 'Ready to Play' }}</h3>
         <p class="text-xs font-bold text-white/40 tracking-[0.05em] truncate uppercase">{{ artistName || 'Music Assistant' }}</p>
       </div>
 
       <!-- 4. 进度条 -->
-      <div class="flex items-center gap-3 px-2 mb-4 shrink-0">
+      <div class="flex items-center gap-3 px-2 mb-3 shrink-0">
         <span class="text-xs font-black text-white/30 tabular-nums w-9 shrink-0">{{ formatTime(currentElapsed) }}</span>
         <div class="progress-bar-track flex-1 h-2 bg-white/5 rounded-full cursor-pointer relative hover:h-2.5 transition-all group/progress" @click="onProgressClick" @mousedown.prevent="onProgressMouseDown">
           <div class="h-full bg-cyan-500 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]" :style="{ width: progressPercent + '%' }"></div>
@@ -65,11 +65,11 @@
       </div>
 
       <!-- 5. 播放控制 -->
-      <div class="flex items-center justify-center gap-8 mb-4 shrink-0">
+      <div class="flex items-center justify-center gap-6 mb-3 shrink-0">
         <button class="text-white/30 hover:text-white transition-all active:scale-75 disabled:opacity-10" :disabled="!activeQueueId" @click="prevTrack">
           <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
         </button>
-        <button class="w-14 h-14 flex items-center justify-center bg-white text-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-10" :disabled="!activeQueueId" @click="togglePlay">
+        <button class="w-12 h-12 flex items-center justify-center bg-white text-black rounded-xl shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-10" :disabled="!activeQueueId" @click="togglePlay">
           <svg v-if="playState === 'playing'" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
           <svg v-else class="w-6 h-6 translate-x-[2px]" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
         </button>

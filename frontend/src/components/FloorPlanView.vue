@@ -62,8 +62,8 @@
       </div>
     </div>
 
-    <!-- 右下角控制栏 -->
-    <div class="absolute bottom-6 right-6 flex flex-col gap-3">
+    <!-- 右下角控制栏 (向上移位以防被音乐播放器挡住) -->
+    <div class="absolute bottom-28 right-6 flex flex-col gap-3 z-40">
       <button
         class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all shadow-lg"
         :class="editMode ? 'text-cyan-300 border border-cyan-500/50 bg-cyan-500/10' : 'border-white/10'"
@@ -241,13 +241,18 @@ const IconSwitch = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 
 const IconSensor = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { d: 'M12 2v2M12 20v2M4.93 4.93 6.34 6.34M17.66 17.66 19.07 19.07M2 12h2M20 12h2M6.34 17.66 4.93 19.07M19.07 4.93 17.66 6.34' })
 ])
+const IconCover = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }),
+  h('path', { d: 'M9 3v18' }),
+  h('path', { d: 'M15 3v18' })
+])
 const IconOther = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { d: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z' }),
   h('path', { d: 'm3.3 7 8.7 5 8.7-5M12 22V12' })
 ])
 
 const getIconComponent = (type) => {
-  return { '灯': IconLight, '空调': IconClimate, '开关': IconSwitch, '传感器': IconSensor }[type] || IconOther
+  return { '灯': IconLight, '空调': IconClimate, '开关': IconSwitch, '传感器': IconSensor, '窗帘': IconCover }[type] || IconOther
 }
 
 const entityState = (entity_id) => {

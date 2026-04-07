@@ -43,62 +43,62 @@
         <div v-if="type === 'climate'">
           <div v-if="displayClimates.length" class="space-y-6 animate-fade-in py-2">
             <div v-for="climate in displayClimates" :key="climate.entity_id"
-              class="glass-panel rounded-[3rem] p-10 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden group mb-8">
+              class="glass-panel rounded-[2rem] p-6 border border-white/5 bg-gradient-to-br from-white/[0.03] to-transparent shadow-2xl relative overflow-hidden group mb-4">
 
               <div class="absolute -top-24 -right-24 w-72 h-72 bg-blue-500/10 blur-[100px] pointer-events-none group-hover:bg-blue-500/20 transition-all duration-1000"></div>
 
               <div class="flex items-center justify-between mb-8">
                 <div>
-                  <div class="text-3xl font-black tracking-tight text-white/90">{{ climate.attributes?.friendly_name || '空调' }}</div>
-                  <div class="text-xs font-black uppercase tracking-[0.3em] text-blue-400/60 mt-2">{{ climate.state }}模式</div>
+                  <div class="text-xl font-black tracking-tight text-white/90">{{ climate.attributes?.friendly_name || '空调' }}</div>
+                  <div class="text-[10px] font-black uppercase tracking-[0.3em] text-blue-400/60 mt-1">{{ climate.state }}模式</div>
                 </div>
-                <div class="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 shadow-inner">
+                <div class="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 shadow-inner">
                   <div class="text-right">
-                    <div class="text-xs font-black text-white/20 uppercase">室内温度</div>
-                    <div class="text-2xl font-black text-white">{{ climate.attributes?.current_temperature || '--' }}°</div>
+                    <div class="text-[10px] font-black text-white/20 uppercase">室内温度</div>
+                    <div class="text-lg font-black text-white">{{ climate.attributes?.current_temperature || '--' }}°</div>
                   </div>
-                  <div class="w-px h-10 bg-white/10"></div>
-                  <div class="text-4xl">🌡️</div>
+                  <div class="w-px h-8 bg-white/10"></div>
+                  <div class="text-2xl">🌡️</div>
                 </div>
               </div>
 
-              <div class="flex items-center justify-center gap-16 mb-12">
+              <div class="flex items-center justify-center gap-10 mb-6">
                 <button @click="setTemp(climate, (climate.attributes?.temperature || 24) - 0.5)"
-                  class="w-20 h-20 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-4xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  class="w-14 h-14 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-2xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
                   －
                 </button>
                 <div class="relative flex flex-col items-center">
-                  <div class="text-[7rem] font-black tracking-tighter text-white tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] leading-none">
-                    {{ Math.round(climate.attributes?.temperature || 24) }}<span class="text-4xl align-top mt-6 ml-1">°</span>
+                  <div class="text-6xl font-black tracking-tighter text-white tabular-nums drop-shadow-[0_0_30px_rgba(255,255,255,0.2)] leading-none">
+                    {{ Math.round(climate.attributes?.temperature || 24) }}<span class="text-2xl align-top mt-4 ml-0.5">°</span>
                   </div>
                 </div>
                 <button @click="setTemp(climate, (climate.attributes?.temperature || 24) + 0.5)"
-                  class="w-20 h-20 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-4xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
+                  class="w-14 h-14 rounded-full flex items-center justify-center border border-white/10 bg-white/5 text-2xl font-black text-white/40 hover:text-white hover:border-white/30 hover:scale-110 active:scale-90 transition-all shadow-lg">
                   ＋
                 </button>
               </div>
 
-              <div class="grid grid-cols-2 gap-10 pt-4">
-                <div class="space-y-4">
-                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.3em] ml-2">运行模式</div>
-                  <div class="flex flex-wrap gap-3">
+              <div class="grid grid-cols-2 gap-6 pt-2">
+                <div class="space-y-3">
+                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-2">运行模式</div>
+                  <div class="flex flex-wrap gap-2">
                     <button v-for="mode in getHvacModes(climate)" :key="mode.value"
-                      class="flex-1 min-w-[90px] px-5 py-4 text-sm font-black rounded-[1.5rem] border transition-all uppercase tracking-wider"
+                      class="flex-1 min-w-[70px] px-3 py-2.5 text-[10px] font-black rounded-xl border transition-all uppercase tracking-wider"
                       :class="climate.state === mode.value ? 'border-blue-500/50 bg-blue-500/20 text-blue-400' : 'border-white/5 bg-white/[0.02] text-white/30'"
                       @click="setMode(climate, mode.value)">
-                      <div class="text-2xl mb-1">{{ mode.icon }}</div>
+                      <div class="text-lg mb-0.5">{{ mode.icon }}</div>
                       {{ mode.label }}
                     </button>
                   </div>
                 </div>
-                <div class="space-y-4">
-                  <div class="text-xs font-black text-white/20 uppercase tracking-[0.3em] ml-2">风速</div>
-                  <div class="flex flex-wrap gap-3">
+                <div class="space-y-3">
+                  <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] ml-2">风速</div>
+                  <div class="flex flex-wrap gap-2">
                     <button v-for="fan in getFanModes(climate)" :key="fan"
-                      class="flex-1 min-w-[80px] px-4 py-4 text-sm font-black rounded-[1.5rem] border transition-all uppercase tracking-tighter"
+                      class="flex-1 min-w-[60px] px-3 py-2.5 text-[10px] font-black rounded-xl border transition-all uppercase tracking-tighter"
                       :class="climate.attributes?.fan_mode === fan ? 'border-cyan-500/50 bg-cyan-500/20 text-cyan-400' : 'border-white/5 bg-white/[0.02] text-white/30'"
                       @click="setFanMode(climate, fan)">
-                      <div class="text-xl mb-1">🌬️</div>
+                      <div class="text-lg mb-0.5">🌬️</div>
                       {{ fan }}
                     </button>
                   </div>
@@ -159,27 +159,27 @@
 
         <!-- 天气详情 -->
         <div v-if="type === 'weather'">
-          <div v-if="weatherEntity" class="space-y-8 py-4 animate-fade-in relative z-10">
-            <div class="text-center py-4">
-              <div class="text-5xl mb-4 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
-              <div class="text-4xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
-              <div class="text-xl font-black text-cyan-400 mt-2 uppercase tracking-[0.4em]">{{ weatherText }}</div>
-              <div class="text-[10px] font-bold text-white/20 mt-1 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
+          <div v-if="weatherEntity" class="space-y-4 py-2 animate-fade-in relative z-10">
+            <div class="text-center py-2">
+              <div class="text-4xl mb-2 drop-shadow-2xl animate-bounce-subtle">{{ weatherEmoji }}</div>
+              <div class="text-3xl font-black tracking-tighter text-white">{{ weatherTemperature }}</div>
+              <div class="text-lg font-black text-cyan-400 mt-1 uppercase tracking-[0.4em]">{{ weatherText }}</div>
+              <div class="text-[9px] font-bold text-white/20 mt-0.5 uppercase tracking-widest">{{ weatherEntity.attributes?.friendly_name }}</div>
             </div>
-            <div class="grid grid-cols-4 gap-4 px-4">
+            <div class="grid grid-cols-4 gap-3 px-2">
               <div v-for="attr in weatherAttrs" :key="attr.key"
-                class="glass-panel rounded-[1.5rem] p-5 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
-                <div class="text-xs font-black text-white/20 uppercase mb-2 tracking-widest">{{ attr.label }}</div>
-                <div class="text-xl font-black text-white/90">{{ attr.value }}</div>
+                class="glass-panel rounded-xl p-3 text-center border border-white/5 shadow-inner hover:border-white/20 hover:bg-white/5 transition-all">
+                <div class="text-[9px] font-black text-white/20 uppercase mb-1 tracking-widest">{{ attr.label }}</div>
+                <div class="text-base font-black text-white/90">{{ attr.value }}</div>
               </div>
             </div>
-            <div v-if="sidebarForecast.length" class="space-y-3 px-2 pt-4 border-t border-white/5">
-              <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7日天气预报</div>
-              <div class="flex gap-2.5 overflow-x-auto pb-4 scrollbar-hidden">
+            <div v-if="sidebarForecast.length" class="space-y-2 px-1 pt-3 border-t border-white/5">
+              <div class="text-[9px] font-black text-white/20 uppercase tracking-[0.4em] ml-2">7日天气预报</div>
+              <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hidden">
                 <div v-for="(fc, idx) in sidebarForecast" :key="idx"
-                  class="flex-shrink-0 w-28 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5">
-                  <span class="text-[10px] font-black text-white/30 uppercase mb-2">{{ fc.weekday }}</span>
-                  <span class="text-3xl mb-2 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
+                  class="flex-shrink-0 w-24 glass-panel p-3 rounded-xl flex flex-col items-center border border-white/5">
+                  <span class="text-[9px] font-black text-white/30 uppercase mb-1.5">{{ fc.weekday }}</span>
+                  <span class="text-2xl mb-1.5 filter drop-shadow-md">{{ getFcEmoji(fc.condition) }}</span>
                   <div class="flex flex-col items-center">
                     <span class="text-base font-black text-white">{{ fc.temp }}°</span>
                   </div>
