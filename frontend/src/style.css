@@ -9,9 +9,9 @@
 @tailwind utilities;
 
 :root {
-  --glass-bg: rgba(15, 20, 35, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 24px;
+  --glass-bg: rgba(13, 18, 30, 0.85); /* 提高不透明度，减小模糊压力 */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 10px; /* 降低模糊半径，显著提升 Tab A8 流畅度 */
   --accent-cyan: #22d3ee;
   --accent-blue: #3b82f6;
   --accent-yellow: #fbbf24;
@@ -25,7 +25,7 @@
 }
 
 body {
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Noto Sans SC', 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: radial-gradient(circle at 15% 15%, #16213e 0%, #0f172a 40%, #020617 100%);
   color: #f8fafc;
   overflow: hidden;
@@ -47,11 +47,10 @@ body, button, input, select, textarea {
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  box-shadow: 
-    0 4px 6px -1px rgba(0, 0, 0, 0.1),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06),
-    inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* 简化阴影 */
+  will-change: backdrop-filter; /* 提升渲染性能 */
 }
 
 .glass-effect {
@@ -124,10 +123,11 @@ body, button, input, select, textarea {
 
 /* 音乐柱状图动画 */
 @keyframes music-bar {
-  0% { height: 6px; }
-  50% { height: 18px; }
-  100% { height: 6px; }
+  0% { height: 6px; transform: scaleY(1); }
+  50% { height: 18px; transform: scaleY(1.2); }
+  100% { height: 6px; transform: scaleY(1); }
 }
+.music-bar-item { will-change: height, transform; }
 
 /* 文字渐显动画 */
 .text-reveal {

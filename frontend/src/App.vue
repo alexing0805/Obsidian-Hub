@@ -2,28 +2,19 @@
   <div class="grid-pattern min-h-screen flex flex-col text-white">
 
     <!-- 顶部导航栏 -->
-    <header class="glass-effect border-b border-white/10 px-6 py-4 flex items-center gap-5 shrink-0 z-30">
-      <!-- 首页图标按钮 -->
-      <button
-        class="w-12 h-12 rounded-2xl flex items-center justify-center transition-all duration-300 overflow-hidden ring-1 ring-cyan-500/50 hover:ring-white/40"
-        @click="currentTab = 'overview'"
-        title="首页"
-      >
-        <img src="/icon.jpg" class="w-full h-full object-cover rounded-xl" alt="首页" />
-      </button>
-
-      <div class="h-8 w-px bg-white/10"></div>
+    <header class="glass-effect border-b border-white/10 px-4 py-1.5 flex items-center gap-4 shrink-0 z-30">
+      <!-- 首页图标已删除 -->
 
       <!-- 分段导航 -->
-      <nav class="flex gap-2 p-1.5 bg-white/5 rounded-2xl border border-white/5">
+      <nav class="flex gap-1 p-1 bg-white/5 rounded-xl border border-white/5">
         <button
           v-for="tab in mainTabs"
           :key="tab.id"
-          class="px-5 py-2.5 rounded-xl flex items-center gap-2 text-base font-medium transition-all duration-300 font-heading min-w-[80px] justify-center"
+          class="px-3.5 py-1.5 rounded-lg flex items-center gap-2 text-sm font-medium transition-all duration-300 font-heading min-w-[70px] justify-center"
           :class="currentTab === tab.id ? 'bg-white/15 text-white shadow-lg ring-1 ring-white/20' : 'text-white/40 hover:text-white/70 hover:bg-white/5'"
           @click="currentTab = tab.id"
         >
-          <span class="text-lg">{{ tab.icon }}</span>
+          <span class="text-base">{{ tab.icon }}</span>
           <span>{{ tab.label }}</span>
         </button>
       </nav>
@@ -31,17 +22,17 @@
       <div class="flex-1"></div>
 
       <!-- 系统状态区 -->
-      <div class="flex items-center gap-5">
-        <div class="flex flex-col items-end mr-3">
-          <span class="text-xs uppercase tracking-wider text-white/30 font-bold leading-none mb-1.5">System Status</span>
-          <span class="text-sm font-heading font-semibold" :class="statusClass">{{ statusText }}</span>
+      <div class="flex items-center gap-4">
+        <div class="flex flex-col items-end mr-1">
+          <span class="text-[0.65rem] uppercase tracking-wider text-white/30 font-bold leading-none mb-0.5">System Status</span>
+          <span class="text-xs font-heading font-semibold" :class="statusClass">{{ statusText }}</span>
         </div>
 
         <button
-          class="w-12 h-12 rounded-2xl glass-effect flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all"
+          class="w-9 h-9 rounded-xl glass-effect flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5"
           @click="toggleFullscreen"
         >
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
           </svg>
         </button>
@@ -251,12 +242,16 @@ const onClimateAction = async ({ entity, action, value }) => {
   }
 }
 
-const onCoverAction = async ({ entity, action }) => {
+const onCoverAction = async ({ entity, action, value }) => {
+  const payload = { domain: 'cover', service: action, entity_id: entity.entity_id }
+  if (value !== undefined) {
+    payload.service_data = { position: parseInt(value) }
+  }
   try {
     await fetch('/api/ha/service', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ domain: 'cover', service: action, entity_id: entity.entity_id })
+      body: JSON.stringify(payload)
     })
   } catch (e) {
     console.error('Cover action failed:', e)

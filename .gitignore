@@ -53,3 +53,8 @@ docker-compose.override.yml
 # Local data
 ha_states.json
 weather_debug.json
+settings.json
+.claude/
+.gemini/
+mcp_config.json
+*.local

@@ -40,9 +40,9 @@
           <img :src="artworkUrl || fallbackArtwork" alt="Cover" class="w-full h-full object-cover transition-opacity duration-700" :class="artworkUrl ? 'opacity-100' : 'opacity-20'" />
           <div v-if="playState === 'playing'" class="absolute bottom-3 right-3 p-2 bg-black/60 backdrop-blur-xl rounded-full border border-white/10 shadow-lg">
              <div class="flex gap-0.5 items-end h-4 w-4 justify-center">
-                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_infinite]" style="height:30%"></span>
-                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_0.2s_infinite]" style="height:80%"></span>
-                <span class="w-0.5 bg-cyan-400 animate-[music-bar_0.8s_0.4s_infinite]" style="height:55%"></span>
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_1.2s_infinite] music-bar-item" style="height:30%"></span>
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_1.2s_0.2s_infinite] music-bar-item" style="height:80%"></span>
+                <span class="w-0.5 bg-cyan-400 animate-[music-bar_1.2s_0.4s_infinite] music-bar-item" style="height:55%"></span>
              </div>
           </div>
         </div>
