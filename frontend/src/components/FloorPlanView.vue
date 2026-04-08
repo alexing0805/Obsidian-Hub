@@ -25,20 +25,30 @@
         ></div>
 
         <div
+          v-if="mapping.displayMode === 'metric'"
+          class="metric-card glass-panel"
+          :class="[mapping.panelClass, mapping.metricCardClass]"
+        >
+          <div class="metric-value">{{ mapping.metricValue }}</div>
+          <div class="metric-unit">{{ mapping.metricUnit }}</div>
+        </div>
+
+        <div
+          v-else
           class="relative w-16 h-16 flex items-center justify-center rounded-2xl glass-panel overflow-visible transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
           :class="mapping.panelClass"
         >
           <component
-            :is="getIconComponent(mapping.type, mapping.entity_id)"
+            :is="mapping.iconComponent"
             class="w-8 h-8 transition-colors duration-300"
             :class="mapping.iconClass"
           />
 
           <div
-            v-if="mapping.value"
+            v-if="mapping.badgeValue"
             class="absolute top-1 right-1 px-1.5 py-0.5 bg-cyan-500 text-[10px] font-black text-white rounded-full shadow-lg border border-white/20 select-none z-10 leading-none"
           >
-            {{ mapping.value }}
+            {{ mapping.badgeValue }}
           </div>
 
           <div
@@ -61,7 +71,7 @@
         :style="previewStyle"
       >
         <div class="w-16 h-16 flex items-center justify-center rounded-2xl glass-panel border-dashed border-cyan-400/50">
-          <component :is="getIconComponent(dragMapping?.type, dragMapping?.entity_id)" class="w-8 h-8 text-cyan-400" />
+          <component :is="resolveEntityIcon(dragMapping?.entity, dragMapping)" class="w-8 h-8 text-cyan-400" />
         </div>
       </div>
     </div>
@@ -71,7 +81,7 @@
         <button
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all shadow-lg"
           :class="editMode ? 'text-cyan-300 border border-cyan-500/50 bg-cyan-500/10' : 'border-white/10'"
-          :title="editMode ? '完成编辑' : '编辑视图'"
+          title="编辑户型图"
           @click="editMode = !editMode"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,17 +126,17 @@
       <div v-if="editMode" class="absolute top-4 left-4 flex gap-2 flex-wrap max-w-[60%]">
         <button
           v-for="layer in layers"
-          :key="layer"
+          :key="layer.id"
           class="glass-panel rounded-xl px-4 py-2.5 text-sm font-bold tracking-wider transition-all"
-          :class="activeLayer === layer ? 'text-white border-white/30 bg-white/10 shadow-lg' : 'text-white/40 border-white/5 hover:bg-white/5 hover:text-white/60'"
-          @click="activeLayer = layer"
+          :class="activeLayer === layer.id ? 'text-white border-white/30 bg-white/10 shadow-lg' : 'text-white/40 border-white/5 hover:bg-white/5 hover:text-white/60'"
+          @click="activeLayer = layer.id"
         >
-          {{ layer }}
+          {{ layer.label }}
         </button>
       </div>
 
       <div v-if="editMode" class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-effect rounded-xl px-5 py-2.5 text-sm text-white/50 shadow-lg">
-        点击图标可控制设备，编辑模式下可拖动位置并保存。
+        点击图标控制设备，编辑模式下可拖动位置并保存。
       </div>
     </template>
 
@@ -156,7 +166,7 @@
               @click="addEntityToPlan(entity)"
             >
               <div class="flex items-center gap-3 min-w-0 flex-1">
-                <component :is="getIconComponent(getEntityType(entity.entity_id), entity.entity_id)" class="w-5 h-5 text-white/55 shrink-0" />
+                <component :is="resolveEntityIcon(entity, { type: getEntityType(entity.entity_id), icon_variant: defaultIconVariant(entity) })" class="w-5 h-5 text-white/55 shrink-0" />
                 <div class="flex flex-col min-w-0 flex-1">
                   <span class="text-base font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
                   <span class="text-xs uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
@@ -188,7 +198,16 @@ const props = defineProps({
 
 const emit = defineEmits(['mapping-update', 'bg-update', 'entity-toggle', 'open'])
 
-const layers = ['All', 'Living', 'Bedroom', 'Kitchen', 'Bath', 'Balcony']
+const layers = [
+  { id: 'All', label: '全部' },
+  { id: 'Living', label: '客厅' },
+  { id: 'Bedroom', label: '卧室' },
+  { id: 'Kitchen', label: '厨房' },
+  { id: 'Bath', label: '卫生间' },
+  { id: 'Balcony', label: '阳台' }
+]
+
+const lightIconOptions = ['bulb', 'ceiling', 'lamp', 'spot', 'strip']
 
 const planContainer = ref(null)
 const editMode = ref(false)
@@ -221,6 +240,28 @@ const availableEntities = computed(() => {
   }).slice(0, 60)
 })
 
+const parseMetricValue = (entity) => {
+  const raw = Number.parseFloat(entity?.state)
+  if (!Number.isFinite(raw)) return null
+  return Math.round(raw)
+}
+
+const getSensorDisplayMode = (entity) => {
+  const unit = String(entity?.attributes?.unit_of_measurement || '').toLowerCase()
+  const deviceClass = String(entity?.attributes?.device_class || '').toLowerCase()
+  if (deviceClass === 'temperature' || unit.includes('c') || unit.includes('f')) return 'metric'
+  if (deviceClass === 'humidity' || unit === '%' || unit.includes('%')) return 'metric'
+  return 'default'
+}
+
+const getMetricMeta = (entity) => {
+  const deviceClass = String(entity?.attributes?.device_class || '').toLowerCase()
+  if (deviceClass === 'humidity') {
+    return { unit: '%', className: 'metric-humidity' }
+  }
+  return { unit: '°', className: 'metric-temperature' }
+}
+
 const displayMappings = computed(() => {
   const baseMappings = activeLayer.value === 'All'
     ? localMappings.value
@@ -229,19 +270,27 @@ const displayMappings = computed(() => {
   return baseMappings.map((mapping) => {
     const entity = entitiesById.value.get(mapping.entity_id)
     const state = entity?.state || 'off'
-    const value = getEntityValue(entity)
     const animated = !props.kioskMode
     const active = isEntityActive(entity)
+    const displayMode = getDisplayMode(entity, mapping)
+    const metricMeta = displayMode === 'metric' ? getMetricMeta(entity) : null
+    const metricValue = displayMode === 'metric' ? parseMetricValue(entity) : null
+    const badgeValue = displayMode === 'metric' ? null : getEntityBadgeValue(entity)
 
     return {
       ...mapping,
       entity,
       state,
-      value,
+      displayMode,
+      metricValue: metricValue ?? '--',
+      metricUnit: metricMeta?.unit || '',
+      metricCardClass: metricMeta?.className || '',
+      badgeValue,
+      iconComponent: resolveEntityIcon(entity, mapping),
       showGlow: animated && active && mapping.type === 'light',
       showIndicator: animated && active && mapping.type === 'light',
       panelClass: active ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5',
-      iconClass: active ? activeColorClass(mapping.type) : 'text-white/40',
+      iconClass: active ? activeColorClass(mapping.type, entity) : 'text-white/40',
       style: {
         left: `${(mapping.x || 0.5) * 100}%`,
         top: `${(mapping.y || 0.5) * 100}%`,
@@ -276,6 +325,17 @@ const previewStyle = computed(() => ({
   color: '#60a5fa'
 }))
 
+const defaultIconVariant = (entity) => {
+  if (!entity?.entity_id?.startsWith('light.')) return ''
+  const icon = String(entity.attributes?.icon || '')
+  const name = String(entity.attributes?.friendly_name || entity.entity_id).toLowerCase()
+  if (icon.includes('chandelier') || name.includes('吊灯')) return 'ceiling'
+  if (icon.includes('desk') || name.includes('台灯')) return 'lamp'
+  if (icon.includes('spot') || name.includes('射灯')) return 'spot'
+  if (icon.includes('led-strip') || name.includes('灯带')) return 'strip'
+  return 'bulb'
+}
+
 const addEntityToPlan = (entity) => {
   const newMapping = {
     entity_id: entity.entity_id,
@@ -283,7 +343,8 @@ const addEntityToPlan = (entity) => {
     y: 0.5,
     type: getEntityType(entity.entity_id),
     label: entity.attributes?.friendly_name || entity.entity_id,
-    layer: activeLayer.value === 'All' ? 'Living' : activeLayer.value
+    layer: activeLayer.value === 'All' ? 'Living' : activeLayer.value,
+    icon_variant: defaultIconVariant(entity)
   }
 
   localMappings.value = [...localMappings.value, newMapping]
@@ -292,79 +353,162 @@ const addEntityToPlan = (entity) => {
   searchQuery.value = ''
 }
 
-const IconLight = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { d: 'M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5' }),
+const iconBaseProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.9', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+
+const IconLightBulb = () => h('svg', iconBaseProps, [
   h('path', { d: 'M9 18h6' }),
-  h('path', { d: 'M10 22h4' })
+  h('path', { d: 'M10 22h4' }),
+  h('path', { d: 'M8.5 10a3.5 3.5 0 1 1 7 0c0 1.35-.47 2.18-1.55 3.2-.63.6-1.02 1.15-1.2 1.8h-1.5c-.18-.65-.57-1.2-1.2-1.8C8.97 12.18 8.5 11.35 8.5 10Z' })
 ])
-const IconClimate = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { d: 'M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z' })
+const IconLightCeiling = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 4v2' }),
+  h('path', { d: 'M7 11c0-2.2 2.24-4 5-4s5 1.8 5 4' }),
+  h('path', { d: 'M6 12h12' }),
+  h('path', { d: 'M8 12v3c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-3' })
 ])
-const IconSwitch = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }),
-  h('path', { d: 'M12 8v8' }),
-  h('path', { d: 'M8 12h8' })
+const IconLightLamp = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M8 10h8l-1.4-4.2A2 2 0 0 0 12.7 4h-1.4a2 2 0 0 0-1.9 1.8Z' }),
+  h('path', { d: 'M12 10v6' }),
+  h('path', { d: 'M9 20h6' })
 ])
-const IconSensor = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { d: 'M12 2v2M12 20v2M4.93 4.93 6.34 6.34M17.66 17.66 19.07 19.07M2 12h2M20 12h2M6.34 17.66 4.93 19.07M19.07 4.93 17.66 6.34' })
+const IconLightSpot = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M6 7h8l3 4-8 1Z' }),
+  h('path', { d: 'M14 7V4' }),
+  h('path', { d: 'M9 12l-2 5' })
 ])
-const IconCover = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }),
-  h('path', { d: 'M9 3v18' }),
-  h('path', { d: 'M15 3v18' })
+const IconLightStrip = () => h('svg', iconBaseProps, [
+  h('rect', { x: '4', y: '8', width: '16', height: '8', rx: '4' }),
+  h('path', { d: 'M8 12h.01M12 12h.01M16 12h.01' })
 ])
-const IconFan = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+
+const IconClimateCool = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 3v18' }),
+  h('path', { d: 'm7 6 5 3 5-3' }),
+  h('path', { d: 'm7 18 5-3 5 3' }),
+  h('path', { d: 'M4 12h16' }),
+  h('path', { d: 'm6 7 3 5-3 5' }),
+  h('path', { d: 'm18 7-3 5 3 5' })
+])
+const IconClimateHeat = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 3c2.6 3 4 5.1 4 7.1A4 4 0 1 1 8 10.1C8 8.1 9.4 6 12 3Z' }),
+  h('path', { d: 'M12 13c1.3 1.3 1.8 2.2 1.8 3.1a1.8 1.8 0 1 1-3.6 0c0-.9.5-1.8 1.8-3.1Z' })
+])
+const IconClimateDry = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 4c3 3.6 5 6 5 8.2A5 5 0 1 1 7 12.2C7 10 9 7.6 12 4Z' })
+])
+const IconClimateFan = () => h('svg', iconBaseProps, [
   h('circle', { cx: '12', cy: '12', r: '2' }),
   h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' }),
   h('path', { d: 'M20 12c0 2-1 3-3 3-1.5 0-3-1-5-3 2-2 3.5-3 5-3 2 0 3 1 3 3Z' }),
   h('path', { d: 'M12 20c-2 0-3-1-3-3 0-1.5 1-3 3-5 2 2 3 3.5 3 5 0 2-1 3-3 3Z' })
 ])
-const IconMedia = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('rect', { x: '3', y: '5', width: '18', height: '14', rx: '2' }),
-  h('path', { d: 'm10 9 5 3-5 3z' })
+const IconClimateAuto = () => h('svg', iconBaseProps, [
+  h('circle', { cx: '12', cy: '12', r: '6' }),
+  h('path', { d: 'M12 6v12' }),
+  h('path', { d: 'M6 12h12' })
 ])
-const IconOther = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
-  h('path', { d: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z' }),
-  h('path', { d: 'm3.3 7 8.7 5 8.7-5M12 22V12' })
+const IconClimateOff = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 3v7' }),
+  h('path', { d: 'M8.2 5.8a7 7 0 1 0 7.6 0' })
 ])
 
-const getIconComponent = (type, entityId = '') => {
+const IconSwitch = () => h('svg', iconBaseProps, [
+  h('rect', { x: '5', y: '5', width: '14', height: '14', rx: '3' }),
+  h('path', { d: 'M12 8v8' })
+])
+const IconSensor = () => h('svg', iconBaseProps, [
+  h('circle', { cx: '12', cy: '12', r: '3' }),
+  h('path', { d: 'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4' })
+])
+const IconCover = () => h('svg', iconBaseProps, [
+  h('rect', { x: '4', y: '5', width: '16', height: '14', rx: '2' }),
+  h('path', { d: 'M8 5v14M12 5v14M16 5v14' })
+])
+const IconFan = () => h('svg', iconBaseProps, [
+  h('circle', { cx: '12', cy: '12', r: '2' }),
+  h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' }),
+  h('path', { d: 'M20 12c0 2-1 3-3 3-1.5 0-3-1-5-3 2-2 3.5-3 5-3 2 0 3 1 3 3Z' }),
+  h('path', { d: 'M12 20c-2 0-3-1-3-3 0-1.5 1-3 3-5 2 2 3 3.5 3 5 0 2-1 3-3 3Z' })
+])
+const IconMedia = () => h('svg', iconBaseProps, [
+  h('rect', { x: '3', y: '6', width: '18', height: '12', rx: '2' }),
+  h('path', { d: 'm10 9 5 3-5 3z' })
+])
+const IconOutlet = () => h('svg', iconBaseProps, [
+  h('rect', { x: '7', y: '4', width: '10', height: '16', rx: '4' }),
+  h('path', { d: 'M10 10v2M14 10v2M12 14v2' })
+])
+const IconOther = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M12 3 4 7.5v9L12 21l8-4.5v-9Z' }),
+  h('path', { d: 'M4 7.5 12 12l8-4.5' }),
+  h('path', { d: 'M12 12v9' })
+])
+
+const getClimateIcon = (entity) => {
+  const state = String(entity?.state || '').toLowerCase()
+  if (state === 'heat') return IconClimateHeat
+  if (state === 'dry') return IconClimateDry
+  if (state === 'fan_only') return IconClimateFan
+  if (state === 'auto') return IconClimateAuto
+  if (state === 'off') return IconClimateOff
+  return IconClimateCool
+}
+
+const getLightIcon = (variant) => {
+  return {
+    ceiling: IconLightCeiling,
+    lamp: IconLightLamp,
+    spot: IconLightSpot,
+    strip: IconLightStrip,
+    bulb: IconLightBulb
+  }[variant || 'bulb'] || IconLightBulb
+}
+
+const resolveEntityIcon = (entity, mapping = {}) => {
+  const entityId = entity?.entity_id || mapping?.entity_id || ''
+  if (entityId.startsWith('light.')) return getLightIcon(mapping?.icon_variant)
+  if (entityId.startsWith('climate.')) return getClimateIcon(entity)
   if (entityId.startsWith('cover.')) return IconCover
   if (entityId.startsWith('fan.')) return IconFan
   if (entityId.startsWith('media_player.')) return IconMedia
+  if (entityId.startsWith('switch.')) return IconSwitch
+  if (entityId.startsWith('binary_sensor.') || entityId.startsWith('sensor.')) return IconSensor
+  if (entityId.startsWith('button.') || entityId.startsWith('input_boolean.')) return IconOutlet
 
   return {
-    light: IconLight,
-    climate: IconClimate,
+    light: getLightIcon(mapping?.icon_variant),
+    climate: getClimateIcon(entity),
     switch: IconSwitch,
     sensor: IconSensor,
     cover: IconCover,
     fan: IconFan,
     media: IconMedia
-  }[type] || IconOther
+  }[mapping?.type] || IconOther
 }
 
 const getEntityType = (entityId) => {
   if (entityId.startsWith('light.')) return 'light'
   if (entityId.startsWith('climate.')) return 'climate'
   if (entityId.startsWith('switch.')) return 'switch'
-  if (entityId.startsWith('sensor.')) return 'sensor'
+  if (entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')) return 'sensor'
   if (entityId.startsWith('cover.')) return 'cover'
   if (entityId.startsWith('fan.')) return 'fan'
   if (entityId.startsWith('media_player.')) return 'media'
   return 'other'
 }
 
-const getEntityValue = (entity) => {
+const getDisplayMode = (entity, mapping) => {
+  if (!entity) return 'icon'
+  if (mapping?.type === 'sensor' && getSensorDisplayMode(entity) === 'metric') return 'metric'
+  return 'icon'
+}
+
+const getEntityBadgeValue = (entity) => {
   if (!entity) return null
 
   if (entity.entity_id.startsWith('climate.')) {
-    return `${entity.attributes?.current_temperature || entity.state}C`
-  }
-
-  if (entity.entity_id.startsWith('sensor.')) {
-    const unit = entity.attributes?.unit_of_measurement || ''
-    return entity.state !== 'unknown' ? `${entity.state}${unit}` : null
+    const value = entity.attributes?.temperature ?? entity.attributes?.current_temperature
+    return value !== undefined && value !== null ? `${Math.round(Number(value))}°` : null
   }
 
   if (entity.entity_id.startsWith('cover.')) {
@@ -372,7 +516,7 @@ const getEntityValue = (entity) => {
     if (Number.isFinite(position)) return `${position}%`
     if (entity.state === 'open') return 'OPEN'
     if (entity.state === 'closed') return 'CLOSE'
-    return entity.state
+    return null
   }
 
   if (entity.entity_id.startsWith('light.') && entity.state === 'on') {
@@ -380,8 +524,8 @@ const getEntityValue = (entity) => {
     if (brightness) return `${Math.round((brightness / 255) * 100)}%`
   }
 
-  if (entity.entity_id.startsWith('fan.')) {
-    return entity.state === 'on' ? 'ON' : 'OFF'
+  if (entity.entity_id.startsWith('fan.') && entity.state === 'on') {
+    return 'ON'
   }
 
   return null
@@ -395,12 +539,19 @@ const isEntityActive = (entity) => {
   return state === 'on'
 }
 
-const activeColorClass = (type) => {
+const activeColorClass = (type, entity) => {
   if (type === 'light') return 'text-yellow-300 glow-yellow'
-  if (type === 'climate') return 'text-cyan-300 glow-blue'
+  if (type === 'climate') {
+    const state = String(entity?.state || '').toLowerCase()
+    if (state === 'heat') return 'text-orange-300 glow-warm'
+    if (state === 'dry') return 'text-cyan-300 glow-blue'
+    if (state === 'fan_only') return 'text-sky-300 glow-blue'
+    return 'text-cyan-300 glow-blue'
+  }
   if (type === 'cover') return 'text-blue-300 glow-blue'
   if (type === 'fan') return 'text-sky-300 glow-blue'
-  if (type === 'media') return 'text-fuchsia-300 glow-blue'
+  if (type === 'media') return 'text-fuchsia-300 glow-violet'
+  if (type === 'switch') return 'text-emerald-300 glow-green'
   return 'text-cyan-300 glow-blue'
 }
 
@@ -425,7 +576,7 @@ const onIconClick = (mapping) => {
     return
   }
 
-  if (entityId.startsWith('sensor.')) {
+  if (entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')) {
     emit('open', { type: 'sensor', entityId })
     return
   }
@@ -515,7 +666,10 @@ watch(
   () => props.entityMapping,
   (value) => {
     if (!hasChanges.value) {
-      localMappings.value = [...(value || [])]
+      localMappings.value = (value || []).map((mapping) => ({
+        ...mapping,
+        icon_variant: mapping.icon_variant || ''
+      }))
     }
   },
   { immediate: true, deep: true }
@@ -550,6 +704,44 @@ watch(
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.metric-card {
+  width: 4.6rem;
+  min-height: 4.25rem;
+  border-radius: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.45rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+}
+
+.metric-value {
+  font-size: 1.45rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #f8fafc;
+}
+
+.metric-unit {
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.metric-temperature {
+  border-color: rgba(34, 211, 238, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(6, 182, 212, 0.12);
+}
+
+.metric-humidity {
+  border-color: rgba(96, 165, 250, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(59, 130, 246, 0.12);
+}
+
 .glow-yellow {
   filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
   animation: glow-pulse-yellow 2s ease-in-out infinite;
@@ -560,6 +752,21 @@ watch(
   animation: glow-pulse-blue 2s ease-in-out infinite;
 }
 
+.glow-green {
+  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));
+  animation: glow-pulse-green 2s ease-in-out infinite;
+}
+
+.glow-warm {
+  filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.85));
+  animation: glow-pulse-warm 2s ease-in-out infinite;
+}
+
+.glow-violet {
+  filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.8));
+  animation: glow-pulse-violet 2s ease-in-out infinite;
+}
+
 @keyframes glow-pulse-yellow {
   0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
   50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)); }
@@ -568,6 +775,21 @@ watch(
 @keyframes glow-pulse-blue {
   0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5)); }
   50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
+}
+
+@keyframes glow-pulse-green {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.45)); }
+  50% { filter: drop-shadow(0 0 15px rgba(52, 211, 153, 0.85)); }
+}
+
+@keyframes glow-pulse-warm {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 146, 60, 0.45)); }
+  50% { filter: drop-shadow(0 0 15px rgba(251, 146, 60, 0.9)); }
+}
+
+@keyframes glow-pulse-violet {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(217, 70, 239, 0.45)); }
+  50% { filter: drop-shadow(0 0 15px rgba(217, 70, 239, 0.85)); }
 }
 
 .animate-fade-in {

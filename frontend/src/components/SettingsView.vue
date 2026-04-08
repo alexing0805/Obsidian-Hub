@@ -144,7 +144,7 @@
           </div>
 
           <div class="text-xs text-white/35">
-            温湿度会显示在主页右侧的室内温度/湿度卡片里。
+            温湿度会显示在主页右侧的室内温度和湿度卡片中。
           </div>
 
           <label class="flex items-center justify-between gap-3 cursor-pointer">
@@ -231,7 +231,7 @@
       <template v-else-if="currentTab === 'floorplan'">
         <section class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-2">户型图实体映射</div>
-          <div class="text-xs text-white/40 mb-3">布局在主页编辑模式里拖动，这里只负责查看和删除映射。</div>
+          <div class="text-xs text-white/40 mb-3">布局在主页编辑模式里拖动，这里负责查看、删除以及灯光图标样式选择。</div>
           <div class="space-y-4">
             <div v-for="(mappings, type) in groupedMappings" :key="type" class="space-y-2">
               <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">{{ type }}</div>
@@ -241,10 +241,23 @@
                 class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
               >
                 <span>{{ entityTypeIcon(mapping.type) }}</span>
-                <span class="flex-1 text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</span>
-                <span class="text-[10px] font-bold tabular-nums text-white/30">
-                  {{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%
-                </span>
+                <div class="flex-1 min-w-0">
+                  <div class="text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</div>
+                  <div class="text-[10px] font-bold tabular-nums text-white/30">
+                    {{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%
+                  </div>
+                  <div v-if="mapping.type === 'light'" class="mt-2">
+                    <select
+                      :value="mapping.icon_variant || 'bulb'"
+                      class="settings-input w-full text-xs"
+                      @change="updateMappingIcon(mapping.entity_id, $event.target.value)"
+                    >
+                      <option v-for="option in lightIconOptions" :key="option.value" :value="option.value">
+                        {{ option.label }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
                 <button
                   class="text-[10px] font-bold text-red-400 hover:text-white hover:bg-red-500/40 px-2 py-1 rounded border border-red-500/20 transition-all"
                   @click="removeMapping(mapping.entity_id)"
@@ -380,6 +393,14 @@ const widgetLabels = {
   music: '音乐播放'
 }
 
+const lightIconOptions = [
+  { value: 'bulb', label: '灯泡' },
+  { value: 'ceiling', label: '吊灯' },
+  { value: 'lamp', label: '台灯' },
+  { value: 'spot', label: '射灯' },
+  { value: 'strip', label: '灯带' }
+]
+
 watch(
   () => props.settings,
   (settings) => {
@@ -407,7 +428,7 @@ const humidityEntities = computed(() => props.haEntities.filter((entity) => enti
 const groupedMappings = computed(() => {
   const groups = {}
   for (const item of localSettings.value.entity_mapping || []) {
-    const type = item.type || '其他'
+    const type = entityTypeLabel(item.type || 'other')
     if (!groups[type]) groups[type] = []
     groups[type].push(item)
   }
@@ -467,17 +488,39 @@ const toggleAll = (type) => {
 
 const entityTypeIcon = (type) => {
   return {
-    灯: '💡',
-    空调: '❄️',
-    传感器: '🌡️',
-    开关: '🔘',
-    窗帘: '🪟',
-    其他: '📦'
+    light: '💡',
+    climate: '❄️',
+    sensor: '🌡️',
+    switch: '🔘',
+    cover: '🪟',
+    fan: '🌀',
+    media: '🎵',
+    other: '📦'
   }[type] || '📦'
+}
+
+const entityTypeLabel = (type) => {
+  return {
+    light: '灯光',
+    climate: '空调',
+    sensor: '传感器',
+    switch: '开关',
+    cover: '窗帘',
+    fan: '风扇',
+    media: '媒体',
+    other: '其他'
+  }[type] || '其他'
 }
 
 const removeMapping = (entityId) => {
   localSettings.value.entity_mapping = (localSettings.value.entity_mapping || []).filter((item) => item.entity_id !== entityId)
+  markDirty()
+}
+
+const updateMappingIcon = (entityId, iconVariant) => {
+  localSettings.value.entity_mapping = (localSettings.value.entity_mapping || []).map((item) =>
+    item.entity_id === entityId ? { ...item, icon_variant: iconVariant } : item
+  )
   markDirty()
 }
 
