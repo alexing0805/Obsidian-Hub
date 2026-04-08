@@ -255,7 +255,32 @@ const defaultIconVariant = (entity) => {
 }
 
 const iconBaseProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.9', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-const IconLightBulb = () => h('svg', iconBaseProps, [h('path', { d: 'M9 18h6' }), h('path', { d: 'M10 22h4' }), h('path', { d: 'M8.5 10a3.5 3.5 0 1 1 7 0c0 1.35-.47 2.18-1.55 3.2-.63.6-1.02 1.15-1.2 1.8h-1.5c-.18-.65-.57-1.2-1.2-1.8C8.97 12.18 8.5 11.35 8.5 10Z' })])
+const IconLightBulb = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M9 18h6' }),
+  h('path', { d: 'M10 22h4' }),
+  h('path', { d: 'M8.5 10a3.5 3.5 0 1 1 7 0c0 1.35-.47 2.18-1.55 3.2-.63.6-1.02 1.15-1.2 1.8h-1.5c-.18-.65-.57-1.2-1.2-1.8C8.97 12.18 8.5 11.35 8.5 10Z' })
+])
+const IconLightCeiling = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M6 8h12' }),
+  h('path', { d: 'M12 4v4' }),
+  h('path', { d: 'M7.5 10.5h9a1.5 1.5 0 0 1 1.4 2l-1.1 3A2 2 0 0 1 14.9 17H9.1a2 2 0 0 1-1.9-1.5l-1.1-3a1.5 1.5 0 0 1 1.4-2Z' })
+])
+const IconLightLamp = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M9 6h6l2 6H7l2-6Z' }),
+  h('path', { d: 'M12 12v5' }),
+  h('path', { d: 'M9 21h6' })
+])
+const IconLightSpot = () => h('svg', iconBaseProps, [
+  h('path', { d: 'M6 6h12' }),
+  h('path', { d: 'M12 6v3' }),
+  h('path', { d: 'M9 9h6l-1.5 3.5a2 2 0 0 1-3 0L9 9Z' }),
+  h('path', { d: 'M12 13v3' }),
+  h('path', { d: 'm10.5 17 1.5 2 1.5-2' })
+])
+const IconLightStrip = () => h('svg', iconBaseProps, [
+  h('rect', { x: '5', y: '9', width: '14', height: '6', rx: '3' }),
+  h('path', { d: 'M8 12h.01M11 12h.01M14 12h.01M17 12h.01' })
+])
 const IconClimateCool = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3v18' }), h('path', { d: 'm7 6 5 3 5-3' }), h('path', { d: 'm7 18 5-3 5 3' }), h('path', { d: 'M4 12h16' })])
 const IconClimateHeat = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3c2.6 3 4 5.1 4 7.1A4 4 0 1 1 8 10.1C8 8.1 9.4 6 12 3Z' })])
 const IconClimateDry = () => h('svg', iconBaseProps, [h('path', { d: 'M12 4c3 3.6 5 6 5 8.2A5 5 0 1 1 7 12.2C7 10 9 7.6 12 4Z' })])
@@ -279,9 +304,17 @@ const getClimateIcon = (entity) => {
   return IconClimateCool
 }
 
+const resolveLightIcon = (variant) => {
+  if (variant === 'ceiling') return IconLightCeiling
+  if (variant === 'lamp') return IconLightLamp
+  if (variant === 'spot') return IconLightSpot
+  if (variant === 'strip') return IconLightStrip
+  return IconLightBulb
+}
+
 const resolveEntityIcon = (entity, mapping = {}) => {
   const entityId = entity?.entity_id || mapping?.entity_id || ''
-  if (entityId.startsWith('light.')) return IconLightBulb
+  if (entityId.startsWith('light.')) return resolveLightIcon(mapping?.icon_variant)
   if (entityId.startsWith('climate.')) return getClimateIcon(entity)
   if (entityId.startsWith('cover.')) return IconCover
   if (entityId.startsWith('fan.')) return IconFan
