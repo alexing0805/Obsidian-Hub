@@ -255,7 +255,7 @@
 
         <!-- 音乐详情 -->
         <div v-if="type === 'music'">
-          <MusicAssistantPlayer :ma-state="maState" />
+          <MusicAssistantPlayer :ma-state="maState" :kiosk-mode="kioskMode" />
         </div>
 
       </div>
@@ -272,8 +272,8 @@ const props = defineProps({
   entityId: { type: String, default: null },
   haEntities: { type: Array, default: () => [] },
   maState: { type: Object, default: () => ({}) },
+  kioskMode: { type: Boolean, default: false },
   weatherEntityId: { type: String, default: '' },
-  weatherForecast: { type: Array, default: () => [] },
   summary: { type: Object, default: () => ({}) }
 })
 
@@ -327,23 +327,26 @@ const offlineEntities = computed(() =>
   props.haEntities.filter(e => ['unknown', 'unavailable', 'none', ''].includes(String(e.state).toLowerCase()))
 )
 
-const weatherEntity = computed(() =>
-  props.haEntities.find(e => e.entity_id === props.weatherEntityId) ||
-  props.haEntities.find(e => e.entity_id.startsWith('weather.')) || null
-)
+const weatherEntity = computed(() => {
+  if (props.weatherEntityId) {
+    const selected = props.haEntities.find((entity) => entity.entity_id === props.weatherEntityId)
+    if (selected) return selected
+  }
+  return props.haEntities.find((entity) => entity.entity_id.startsWith('weather.')) || null
+})
 const weatherTemperature = computed(() => {
-  const v = weatherEntity.value?.attributes?.temperature
+  const v = props.summary?.weather?.temperature ?? weatherEntity.value?.attributes?.temperature
   return v !== undefined && v !== null ? `${Math.round(Number(v))}°` : '--'
 })
 const weatherLow = computed(() => {
   const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
-  const val = fc0?.templow ?? fc0?.temperature_low ?? 0
-  return Math.round(val)
+  const val = fc0?.templow ?? fc0?.temperature_low ?? fc0?.min_temp ?? props.summary?.weather?.temperature_low
+  return val !== undefined && val !== null ? Math.round(Number(val)) : '--'
 })
 const weatherHigh = computed(() => {
   const fc0 = props.summary?.weather?.forecast?.[0] || weatherEntity.value?.attributes?.forecast?.[0]
-  const val = fc0?.temperature ?? fc0?.temp_high ?? 0
-  return Math.round(val)
+  const val = fc0?.temperature ?? fc0?.temp_high ?? fc0?.max_temp ?? props.summary?.weather?.temperature_high
+  return val !== undefined && val !== null ? Math.round(Number(val)) : '--'
 })
 
 const weatherEmoji = computed(() => {
@@ -375,11 +378,12 @@ const forecastMode = ref('daily')
 const weatherAttrs = computed(() => {
   if (!weatherEntity.value) return []
   const attrs = weatherEntity.value.attributes || {}
+  const summaryWeather = props.summary?.weather || {}
   return [
-    { key: 'pressure', label: '气压', value: `${attrs.pressure || '--'} hPa`, icon: '⏲️' },
-    { key: 'humidity', label: '湿度', value: `${attrs.humidity || '--'}%`, icon: '💧' },
-    { key: 'wind_speed', label: '风速', value: `${attrs.wind_speed || '--'} km/h`, icon: '🌬️' },
-    { key: 'visibility', label: '能见度', value: `${attrs.visibility || '--'} km`, icon: '👁️' },
+    { key: 'pressure', label: '气压', value: `${summaryWeather.pressure ?? attrs.pressure ?? '--'} hPa`, icon: '⏲️' },
+    { key: 'humidity', label: '湿度', value: `${summaryWeather.humidity ?? attrs.humidity ?? '--'}%`, icon: '💧' },
+    { key: 'wind_speed', label: '风速', value: `${summaryWeather.wind_speed ?? attrs.wind_speed ?? '--'} km/h`, icon: '🌬️' },
+    { key: 'visibility', label: '能见度', value: `${summaryWeather.visibility ?? attrs.visibility ?? '--'} km`, icon: '👁️' },
   ]
 })
 

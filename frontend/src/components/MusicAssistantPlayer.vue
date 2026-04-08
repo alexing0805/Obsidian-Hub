@@ -95,7 +95,8 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 const props = defineProps({
-  maState: { type: Object, default: () => ({}) }
+  maState: { type: Object, default: () => ({}) },
+  kioskMode: { type: Boolean, default: false }
 })
 
 const fallbackArtwork =
@@ -133,10 +134,13 @@ const isDragging = ref(false)
 const dragElapsed = ref(0)
 const isVolDragging = ref(false)
 const dragVolume = ref(0)
+const elapsedTick = ref(0)
+let elapsedTimer = null
 
 const maConnected = computed(() => !!props.maState?.connected)
 
 const currentElapsed = computed(() => {
+  elapsedTick.value
   if (isDragging.value) return dragElapsed.value
   if (playState.value !== 'playing') return elapsed.value
   const now = Date.now() / 1000
@@ -152,6 +156,16 @@ const progressPercent = computed(() => {
 const displayedVolume = computed(() => {
   return isVolDragging.value ? dragVolume.value : volume.value
 })
+
+const restartElapsedTimer = () => {
+  if (elapsedTimer) clearInterval(elapsedTimer)
+  elapsedTimer = null
+  if (playState.value !== 'playing') return
+  const intervalMs = props.kioskMode ? 1500 : 1000
+  elapsedTimer = setInterval(() => {
+    elapsedTick.value += 1
+  }, intervalMs)
+}
 
 const pickActiveQueue = (queues = [], requestedQueueId = null) => {
   if (!Array.isArray(queues) || queues.length === 0) return null
@@ -241,6 +255,14 @@ watch(
   (state) => { applyMAState(state || {}) },
   { immediate: true, deep: true }
 )
+
+watch(playState, () => {
+  restartElapsedTimer()
+})
+
+watch(() => props.kioskMode, () => {
+  restartElapsedTimer()
+})
 
 const formatTime = (seconds) => {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
@@ -370,6 +392,7 @@ const onVolumeMouseUp = () => {
 }
 
 onUnmounted(() => {
+  if (elapsedTimer) clearInterval(elapsedTimer)
   document.removeEventListener('mousemove', onProgressMouseMove)
   document.removeEventListener('mouseup', onProgressMouseUp)
   document.removeEventListener('mousemove', onVolumeMouseMove)

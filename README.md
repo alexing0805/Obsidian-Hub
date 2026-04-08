@@ -1,78 +1,71 @@
 # Obsidian Hub
 
-面向平板的智能家居控制面板，后端对接 Home Assistant（HA）与 Music Assistant（MA），前端提供 Obsidian Hub 风格控制界面。
+一个面向平板的家庭中控面板。
 
-## 当前已实现
+后端使用 FastAPI，对接 Home Assistant 和 Music Assistant；前端使用 Vue 3 + Vite，提供灯光、空调、窗帘、天气、低电量、离线设备和音乐播放的统一控制界面。
 
-- HA 集成
-- 获取全部实体（`/api/ha/entities`）
-- 获取摘要信息（温湿度、天气、设备统计）（`/api/ha/summary`）
-- 调用 HA 服务（`/api/ha/service`）
+## 当前功能
 
-- MA 集成
-- 后端维持 MA WebSocket 长连接并认证
-- 拉取队列和播放器状态（`/api/ma/state`）
-- 发送 MA 命令（`/api/ma/cmd`）
-- 采用稳定轮询刷新（默认 5 秒）+ 前端 WS 推送
-
-- 前端
-- 动态读取真实灯光实体，不再硬编码
-- 灯光点位可点击控制
-- 天气、温湿度、设备统计卡片
-- Music Assistant 播放控制、进度拖拽、音量控制、随机/循环
-- 与后端 `/api/ws` 实时同步状态
+- Home Assistant
+  - 获取实体列表：`GET /api/ha/entities`
+  - 获取汇总信息：`GET /api/ha/summary`
+  - 调用服务：`POST /api/ha/service`
+- Music Assistant
+  - 获取当前状态：`GET /api/ma/state`
+  - 发送命令：`POST /api/ma/cmd`
+  - 切换当前播放器：`POST /api/ma/switch_player`
+- 前端界面
+  - 户型图布局与拖拽定位
+  - 灯光、空调、窗帘快捷控制
+  - 天气、温湿度、低电量、离线设备卡片
+  - Music Assistant 播放控制
+  - WebSocket 实时同步：`WS /api/ws`
+- 设置持久化
+  - 配置保存在 `backend/settings.json`
+  - 支持天气实体、温湿度实体、侧边栏显示项、户型图背景和实体布局
 
 ## 项目结构
 
 ```text
-obsidian-hub/
-├── backend/
-│   ├── main.py
-│   └── requirements.txt
-├── frontend/
-│   ├── src/
-│   │   ├── App.vue
-│   │   ├── main.js
-│   │   ├── style.css
-│   │   └── components/
-│   │       ├── DetailOverlay.vue
-│   │       ├── FloorPlanView.vue
-│   │       ├── MusicAssistantPlayer.vue
-│   │       ├── MusicPlayerSelector.vue
-│   │       ├── SettingsView.vue
-│   │       └── SidebarWidgets.vue
-│   ├── package.json
-│   └── vite.config.js
-├── Dockerfile
-├── docker-compose.yml
-├── .env
-└── .env.example
+aura-grid-docker/
+├─ backend/
+│  ├─ main.py
+│  └─ requirements.txt
+├─ frontend/
+│  ├─ src/
+│  │  ├─ App.vue
+│  │  ├─ main.js
+│  │  ├─ style.css
+│  │  └─ components/
+│  ├─ package.json
+│  └─ vite.config.js
+├─ Dockerfile
+├─ docker-compose.yml
+├─ .env.example
+└─ README.md
 ```
 
 ## 环境变量
 
-示例见 `.env.example`。
+参考 `.env.example`。
 
-关键项：
+关键变量：
 
-- `HA_URL`：例如 `http://192.168.100.50:8123`
-- `HA_TOKEN`：HA Long-Lived Access Token
-- `MA_URL`：例如 `ws://192.168.100.50:8095/ws`
-- `MA_TOKEN`：MA 长期令牌
-- `HA_REFRESH_INTERVAL`：HA 轮询秒数（默认 15）
-- `MA_REFRESH_INTERVAL`：MA 轮询秒数（默认 5）
+- `HA_URL`
+- `HA_TOKEN`
+- `MA_URL`
+- `MA_TOKEN`
+- `HOST`
+- `PORT`
+- `MA_COMMAND_TIMEOUT`
+- `CORS_ALLOW_ORIGINS`
 
-## 运行方式
+说明：
 
-### Docker
+- `CORS_ALLOW_ORIGINS` 使用逗号分隔，例如 `http://localhost:8000,http://localhost:5173`
+- `HA_REFRESH_INTERVAL` 和 `MA_REFRESH_INTERVAL` 已经迁移为运行时设置，优先从 `backend/settings.json` 读取，不再建议依赖环境变量
 
-```bash
-docker-compose up -d --build
-```
-
-访问：`http://localhost:8000`
-
-### 本地开发
+## 本地开发
 
 后端：
 
@@ -90,18 +83,48 @@ npm install
 npm run dev
 ```
 
-前端开发服务器默认 `http://localhost:5173`，已配置 `/api` 和 WebSocket 代理到 `http://localhost:8000`。
+开发模式下：
 
-## API 简要
+- 前端默认运行在 `http://localhost:5173`
+- Vite 已经把 `/api` 和 WebSocket 代理到 `http://localhost:8000`
 
-- `GET /api/status`：后端连接状态
-- `GET /api/ha/entities?domain=light`：实体列表（可按 domain 过滤）
-- `GET /api/ha/summary`：摘要统计
-- `POST /api/ha/service`：调用 HA 服务
-- `GET /api/ma/state`：MA 当前状态
-- `POST /api/ma/cmd`：发送 MA 命令
-- `WS /api/ws`：推送 `init / ha_state / ma_state / ma_event`
+## Docker 运行
 
-## 说明
+准备配置：
 
-部分 MA 实例在当前版本下不会稳定推送全量状态事件，因此后端采用“长连接 + 定时刷新 + WS 广播”的方式保证前端状态可靠更新。
+```bash
+cp .env.example .env
+```
+
+启动：
+
+```bash
+docker compose up -d --build
+```
+
+访问：
+
+- `http://localhost:8000`
+
+说明：
+
+- `backend/settings.json` 会通过 volume 持久化
+- `docker-compose.yml` 默认使用本地 `Dockerfile` 构建，而不是直接拉远程镜像
+
+## API 概览
+
+- `GET /api/status`
+- `GET /api/settings`
+- `PUT /api/settings`
+- `GET /api/ha/entities`
+- `GET /api/ha/summary`
+- `POST /api/ha/service`
+- `GET /api/ma/state`
+- `POST /api/ma/cmd`
+- `POST /api/ma/switch_player`
+- `WS /api/ws`
+
+## 已知实现说明
+
+- Music Assistant 的状态同步采用“长连接 + 定时刷新 + WebSocket 广播”组合，而不是只依赖服务端事件推送
+- 浏览器侧不会再收到明文 HA/MA token；设置接口仅返回掩码值

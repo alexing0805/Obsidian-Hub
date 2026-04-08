@@ -3,7 +3,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 COPY frontend/package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY frontend/ ./
 RUN npm run build
@@ -29,6 +29,7 @@ ENV MA_URL=ws://192.168.100.50:8095/ws
 ENV MA_TOKEN=
 ENV HOST=0.0.0.0
 ENV PORT=8000
+ENV CORS_ALLOW_ORIGINS=http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173
 
 # 暴露端口
 EXPOSE 8000

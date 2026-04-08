@@ -54,6 +54,7 @@ docker-compose.override.yml
 ha_states.json
 weather_debug.json
 settings.json
+backend/settings.json
 .claude/
 .gemini/
 mcp_config.json

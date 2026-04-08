@@ -1,10 +1,9 @@
 <template>
   <div class="settings-view flex flex-col min-h-0 h-full">
-
-    <!-- 顶部 Tab 导航 -->
     <div class="shrink-0 px-4 pt-4 pb-2 flex items-center gap-1 border-b border-white/10">
       <button
-        v-for="tab in tabs" :key="tab.id"
+        v-for="tab in tabs"
+        :key="tab.id"
         class="px-3 py-1.5 text-xs rounded-lg transition-colors"
         :class="currentTab === tab.id ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/70'"
         @click="currentTab = tab.id"
@@ -13,10 +12,7 @@
       </button>
     </div>
 
-    <!-- 内容区（强制纵向可滚动容器） -->
     <div class="flex-1 overflow-y-auto px-4 py-4 space-y-5 min-h-0">
-
-      <!-- 连接设置 -->
       <template v-if="currentTab === 'connection'">
         <div class="glass-effect rounded-xl p-4">
           <div class="flex items-center gap-2 mb-3">
@@ -26,30 +22,53 @@
               <span class="text-xs px-2 py-1 rounded" :class="haConnectedClass">{{ haConnectedText }}</span>
             </div>
           </div>
+
           <div class="space-y-3">
             <div>
               <label class="block text-xs text-white/60 mb-1">HA URL</label>
-              <input v-model="localSettings.ha_url" type="text" placeholder="http://192.168.1.100:8123"
-                class="settings-input w-full" @input="markDirty" />
+              <input
+                v-model.trim="localSettings.ha_url"
+                type="text"
+                placeholder="http://192.168.1.100:8123"
+                class="settings-input w-full"
+                @input="markDirty"
+              />
             </div>
+
             <div>
               <label class="block text-xs text-white/60 mb-1">HA Token</label>
-              <input v-model="localSettings.ha_token" type="password" placeholder="Long-Lived Access Token"
-                class="settings-input w-full" @input="markDirty" />
+              <input
+                v-model.trim="localSettings.ha_token"
+                type="password"
+                :placeholder="props.settings.ha_token_masked || '留空则保持当前 Token'"
+                class="settings-input w-full"
+                @input="markDirty"
+              />
+              <div v-if="props.settings.ha_token_masked" class="text-[11px] text-white/30 mt-1">
+                当前已保存: {{ props.settings.ha_token_masked }}
+              </div>
             </div>
+
             <div class="flex items-center gap-3">
               <label class="text-xs text-white/60 w-20 shrink-0">刷新间隔</label>
-              <input v-model.number="localSettings.ha_refresh_interval" type="number" min="5" max="300"
-                class="settings-input w-24" @input="markDirty" />
+              <input
+                v-model.number="localSettings.ha_refresh_interval"
+                type="number"
+                min="5"
+                max="300"
+                class="settings-input w-24"
+                @input="markDirty"
+              />
               <span class="text-xs text-white/40">秒</span>
             </div>
-            <div>
-              <button class="px-4 py-2 text-sm rounded-lg border transition-colors"
-                :class="haConnected ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' : 'border-white/10 text-white/40'"
-                @click="testHAConnection">
-                测试连接
-              </button>
-            </div>
+
+            <button
+              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+              :class="haConnected ? 'border-blue-500/50 text-blue-400 hover:bg-blue-500/10' : 'border-white/10 text-white/40'"
+              @click="testHAConnection"
+            >
+              测试连接
+            </button>
           </div>
         </div>
 
@@ -61,188 +80,310 @@
               <span class="text-xs px-2 py-1 rounded" :class="maConnectedClass">{{ maConnectedText }}</span>
             </div>
           </div>
+
           <div class="space-y-3">
             <div>
               <label class="block text-xs text-white/60 mb-1">MA WebSocket URL</label>
-              <input v-model="localSettings.ma_url" type="text" placeholder="ws://192.168.1.100:8095/ws"
-                class="settings-input w-full" @input="markDirty" />
+              <input
+                v-model.trim="localSettings.ma_url"
+                type="text"
+                placeholder="ws://192.168.1.100:8095/ws"
+                class="settings-input w-full"
+                @input="markDirty"
+              />
             </div>
+
             <div>
               <label class="block text-xs text-white/60 mb-1">MA Token</label>
-              <input v-model="localSettings.ma_token" type="password" placeholder="长期访问令牌"
-                class="settings-input w-full" @input="markDirty" />
+              <input
+                v-model.trim="localSettings.ma_token"
+                type="password"
+                :placeholder="props.settings.ma_token_masked || '留空则保持当前 Token'"
+                class="settings-input w-full"
+                @input="markDirty"
+              />
+              <div v-if="props.settings.ma_token_masked" class="text-[11px] text-white/30 mt-1">
+                当前已保存: {{ props.settings.ma_token_masked }}
+              </div>
             </div>
+
             <div class="flex items-center gap-3">
               <label class="text-xs text-white/60 w-20 shrink-0">刷新间隔</label>
-              <input v-model.number="localSettings.ma_refresh_interval" type="number" min="2" max="60"
-                class="settings-input w-24" @input="markDirty" />
+              <input
+                v-model.number="localSettings.ma_refresh_interval"
+                type="number"
+                min="2"
+                max="60"
+                class="settings-input w-24"
+                @input="markDirty"
+              />
               <span class="text-xs text-white/40">秒</span>
             </div>
-            <div>
-              <button class="px-4 py-2 text-sm rounded-lg border transition-colors"
-                :class="maConnected ? 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10' : 'border-white/10 text-white/40'"
-                @click="testMAConnection">
-                测试连接
-              </button>
-            </div>
+
+            <button
+              class="px-4 py-2 text-sm rounded-lg border transition-colors"
+              :class="maConnected ? 'border-purple-500/50 text-purple-400 hover:bg-purple-500/10' : 'border-white/10 text-white/40'"
+              @click="testMAConnection"
+            >
+              测试连接
+            </button>
           </div>
         </div>
       </template>
 
-      <!-- 显示设置 -->
-      <template v-if="currentTab === 'display'">
-        <!-- 主页侧边栏控件 -->
+      <template v-else-if="currentTab === 'display'">
         <div class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-3">🏠 主页侧边栏控件</div>
           <div class="text-xs text-white/40 mb-3">勾选要在主页侧边栏显示的控件，点击卡片可查看详情</div>
           <div class="space-y-2">
-            <label v-for="(label, key) in widgetLabels" :key="key" class="flex items-center gap-3 cursor-pointer group">
-              <input type="checkbox" v-model="localSettings.sidebar_widgets[key]"
-                class="w-4 h-4 rounded accent-emerald-500" @change="markDirty" />
+            <label
+              v-for="(label, key) in widgetLabels"
+              :key="key"
+              class="flex items-center gap-3 cursor-pointer group"
+            >
+              <input
+                v-model="localSettings.sidebar_widgets[key]"
+                type="checkbox"
+                class="w-4 h-4 rounded accent-emerald-500"
+                @change="markDirty"
+              />
               <span class="text-sm text-white/70 group-hover:text-white transition-colors">{{ label }}</span>
             </label>
           </div>
         </div>
 
-        <!-- 天气实体选择 -->
         <div class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-3">🌤️ 天气显示实体</div>
           <select v-model="localSettings.weather_entity_id" class="settings-input w-full" @change="markDirty">
             <option value="">自动（第一个天气实体）</option>
-            <option v-for="w in weatherEntities" :key="w.entity_id" :value="w.entity_id">
-              {{ w.attributes?.friendly_name || w.entity_id }}
+            <option v-for="entity in weatherEntities" :key="entity.entity_id" :value="entity.entity_id">
+              {{ entity.attributes?.friendly_name || entity.entity_id }}
             </option>
           </select>
-          <div v-if="!weatherEntities.length" class="text-xs text-white/30 mt-2">未检测到天气实体，请先连接 HA</div>
         </div>
 
-        <!-- 灯光实体选择 -->
+        <div class="glass-effect rounded-xl p-4">
+          <div class="text-sm font-medium mb-3">🌡️ 温湿度来源</div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-white/60 mb-1">温度实体</label>
+              <select v-model="localSettings.temperature_entity" class="settings-input w-full" @change="markDirty">
+                <option value="">自动选择</option>
+                <option v-for="entity in temperatureEntities" :key="entity.entity_id" :value="entity.entity_id">
+                  {{ entity.attributes?.friendly_name || entity.entity_id }}
+                </option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-white/60 mb-1">湿度实体</label>
+              <select v-model="localSettings.humidity_entity" class="settings-input w-full" @change="markDirty">
+                <option value="">自动选择</option>
+                <option v-for="entity in humidityEntities" :key="entity.entity_id" :value="entity.entity_id">
+                  {{ entity.attributes?.friendly_name || entity.entity_id }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div class="glass-effect rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <div class="text-sm font-medium">💡 灯光快捷显示</div>
             <label class="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" v-model="selectAllLights" class="w-3.5 h-3.5 rounded accent-yellow-400" @change="toggleAllLights" />
+              <input v-model="selectAllLights" type="checkbox" class="w-3.5 h-3.5 rounded accent-yellow-400" @change="toggleAllLights" />
               <span class="text-white/50">全部</span>
             </label>
           </div>
           <div class="space-y-1 max-h-40 overflow-y-auto">
-            <label v-for="light in allLights" :key="light.entity_id"
-              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer">
-              <input type="checkbox" :value="light.entity_id" v-model="localSettings.selected_light_entities"
-                class="w-3.5 h-3.5 rounded accent-yellow-400" @change="markDirty" />
-              <span class="text-xs text-white/70 truncate">{{ light.attributes?.friendly_name || light.entity_id }}</span>
+            <label
+              v-for="entity in allLights"
+              :key="entity.entity_id"
+              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer"
+            >
+              <input
+                v-model="localSettings.selected_light_entities"
+                type="checkbox"
+                :value="entity.entity_id"
+                class="w-3.5 h-3.5 rounded accent-yellow-400"
+                @change="markDirty"
+              />
+              <span class="text-xs text-white/70 truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
             </label>
           </div>
-          <div v-if="!allLights.length" class="text-xs text-white/30 mt-2">未检测到灯光设备</div>
         </div>
 
-        <!-- 空调实体选择 -->
         <div class="glass-effect rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
             <div class="text-sm font-medium">❄️ 空调快捷显示</div>
             <label class="flex items-center gap-2 text-xs cursor-pointer">
-              <input type="checkbox" v-model="selectAllClimates" class="w-3.5 h-3.5 rounded accent-blue-400" @change="toggleAllClimates" />
+              <input v-model="selectAllClimates" type="checkbox" class="w-3.5 h-3.5 rounded accent-blue-400" @change="toggleAllClimates" />
               <span class="text-white/50">全部</span>
             </label>
           </div>
           <div class="space-y-1 max-h-40 overflow-y-auto">
-            <label v-for="climate in allClimates" :key="climate.entity_id"
-              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer">
-              <input type="checkbox" :value="climate.entity_id" v-model="localSettings.selected_climate_entities"
-                class="w-3.5 h-3.5 rounded accent-blue-400" @change="markDirty" />
-              <span class="text-xs text-white/70 truncate">{{ climate.attributes?.friendly_name || climate.entity_id }}</span>
+            <label
+              v-for="entity in allClimates"
+              :key="entity.entity_id"
+              class="flex items-center gap-2 py-1 px-2 rounded-lg hover:bg-white/5 cursor-pointer"
+            >
+              <input
+                v-model="localSettings.selected_climate_entities"
+                type="checkbox"
+                :value="entity.entity_id"
+                class="w-3.5 h-3.5 rounded accent-blue-400"
+                @change="markDirty"
+              />
+              <span class="text-xs text-white/70 truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
             </label>
           </div>
-          <div v-if="!allClimates.length" class="text-xs text-white/30 mt-2">未检测到空调设备</div>
         </div>
 
-        <!-- 低电量/离线实体选择 -->
         <div class="glass-effect rounded-xl p-4">
-          <div class="text-sm font-medium mb-3">🔋 低电量 / 📡 离线 监控范围</div>
-          <div class="text-xs text-white/40 mb-2">选择要监控哪些实体（留空则全部监控）</div>
+          <div class="text-sm font-medium mb-3">🔋 低电量 / 📡 离线监控范围</div>
+          <div class="text-xs text-white/40 mb-2">选择要监控哪些实体，留空表示监控全部。</div>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <div class="text-xs text-white/40 mb-1">低电量实体</div>
               <div class="space-y-1 max-h-32 overflow-y-auto">
-                <label v-for="b in batteryEntities" :key="b.entity_id"
-                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer">
-                  <input type="checkbox" :value="b.entity_id" v-model="localSettings.selected_battery_entities"
-                    class="w-3 h-3 rounded accent-red-400" @change="markDirty" />
-                  <span class="text-xs text-white/60 truncate">{{ b.attributes?.friendly_name || b.entity_id }}</span>
+                <label
+                  v-for="entity in batteryEntities"
+                  :key="entity.entity_id"
+                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer"
+                >
+                  <input
+                    v-model="localSettings.selected_battery_entities"
+                    type="checkbox"
+                    :value="entity.entity_id"
+                    class="w-3 h-3 rounded accent-red-400"
+                    @change="markDirty"
+                  />
+                  <span class="text-xs text-white/60 truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
                 </label>
               </div>
             </div>
+
             <div>
               <div class="text-xs text-white/40 mb-1">离线设备</div>
               <div class="space-y-1 max-h-32 overflow-y-auto">
-                <label v-for="e in allEntities" :key="e.entity_id"
-                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer">
-                  <input type="checkbox" :value="e.entity_id" v-model="localSettings.selected_offline_entities"
-                    class="w-3 h-3 rounded accent-orange-400" @change="markDirty" />
-                  <span class="text-xs text-white/60 truncate">{{ e.attributes?.friendly_name || e.entity_id }}</span>
+                <label
+                  v-for="entity in allEntities"
+                  :key="entity.entity_id"
+                  class="flex items-center gap-1 py-0.5 px-1 rounded hover:bg-white/5 cursor-pointer"
+                >
+                  <input
+                    v-model="localSettings.selected_offline_entities"
+                    type="checkbox"
+                    :value="entity.entity_id"
+                    class="w-3 h-3 rounded accent-orange-400"
+                    @change="markDirty"
+                  />
+                  <span class="text-xs text-white/60 truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
                 </label>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 侧边栏开关 -->
         <div class="glass-effect rounded-xl p-4">
           <div class="flex items-center justify-between">
             <div>
               <div class="text-sm font-medium">显示侧边栏</div>
               <div class="text-xs text-white/40 mt-0.5">关闭后主页不显示右侧面板</div>
             </div>
-            <button class="w-11 h-6 rounded-full transition-colors relative shrink-0"
+            <button
+              class="w-11 h-6 rounded-full transition-colors relative shrink-0"
               :class="localSettings.show_sidebar ? 'bg-emerald-500' : 'bg-white/20'"
-              @click="localSettings.show_sidebar = !localSettings.show_sidebar; markDirty()">
-              <div class="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
-                :class="localSettings.show_sidebar ? 'translate-x-5.5' : 'translate-x-0.5'"></div>
+              @click="localSettings.show_sidebar = !localSettings.show_sidebar; markDirty()"
+            >
+              <div
+                class="absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform"
+                :class="localSettings.show_sidebar ? 'translate-x-5.5' : 'translate-x-0.5'"
+              ></div>
             </button>
           </div>
         </div>
 
-        <!-- 时钟格式 -->
         <div class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-3">时钟格式</div>
           <div class="flex gap-2">
-            <button class="px-4 py-2 text-sm rounded-lg transition-colors"
+            <button
+              class="px-4 py-2 text-sm rounded-lg transition-colors"
               :class="localSettings.clock_24h ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50' : 'bg-white/10 text-white/40 border border-transparent'"
-              @click="localSettings.clock_24h = true; markDirty()">24 小时制</button>
-            <button class="px-4 py-2 text-sm rounded-lg transition-colors"
+              @click="localSettings.clock_24h = true; markDirty()"
+            >
+              24 小时制
+            </button>
+            <button
+              class="px-4 py-2 text-sm rounded-lg transition-colors"
               :class="!localSettings.clock_24h ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50' : 'bg-white/10 text-white/40 border border-transparent'"
-              @click="localSettings.clock_24h = false; markDirty()">12 小时制</button>
+              @click="localSettings.clock_24h = false; markDirty()"
+            >
+              12 小时制
+            </button>
+          </div>
+        </div>
+
+        <div class="glass-effect rounded-xl p-4">
+          <div class="text-sm font-medium mb-3">壁挂模式</div>
+          <div class="space-y-3">
+            <label class="flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm text-white/70">启用 Fully Kiosk 优化</span>
+              <input
+                v-model="localSettings.kiosk_mode"
+                type="checkbox"
+                class="w-4 h-4 rounded accent-emerald-500"
+                @change="markDirty"
+              />
+            </label>
+            <label class="flex items-center justify-between gap-3 cursor-pointer">
+              <span class="text-sm text-white/70">时钟显示秒</span>
+              <input
+                v-model="localSettings.show_seconds"
+                type="checkbox"
+                class="w-4 h-4 rounded accent-cyan-500"
+                @change="markDirty"
+              />
+            </label>
+            <div class="text-xs text-white/40">
+              建议壁挂设备关闭秒钟显示，并保持 Fully Kiosk 优化开启。
+            </div>
           </div>
         </div>
       </template>
 
-      <!-- 户型图设置 (Floor Plan) -->
-      <template v-if="currentTab === 'floorplan'">
+      <template v-else-if="currentTab === 'floorplan'">
         <div class="glass-effect rounded-xl p-4">
-          <div class="text-sm font-medium mb-2">🗺️ 3D 视图实体映射</div>
-          <div class="text-xs text-white/40 mb-3">拖拽编辑模式下可在视图里自由放置位置，点击切换状态</div>
-          <div class="text-xs text-white/40 mb-2">已映射实体（点击删除）：</div>
+          <div class="text-sm font-medium mb-2">🗺️ 户型图实体映射</div>
+          <div class="text-xs text-white/40 mb-3">在主视图编辑模式里拖拽位置，这里只负责查看和删除映射。</div>
           <div class="space-y-4 mb-3">
             <div v-for="(mappings, type) in groupedMappings" :key="type" class="space-y-2">
               <div class="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] ml-1">{{ type }}</div>
-              <div v-for="mapping in mappings" :key="mapping.entity_id"
-                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
+              <div
+                v-for="mapping in mappings"
+                :key="mapping.entity_id"
+                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
+              >
                 <span>{{ entityTypeIcon(mapping.type) }}</span>
                 <span class="flex-1 text-xs truncate text-white/70">{{ mapping.label || mapping.entity_id }}</span>
-                <span class="text-[10px] font-bold tabular-nums text-white/30">{{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%</span>
-                <button class="text-[10px] font-bold text-red-400 hover:text-white hover:bg-red-500/40 px-2 py-1 rounded border border-red-500/20 transition-all"
-                  @click="removeMapping(mapping.entity_id)">删除</button>
+                <span class="text-[10px] font-bold tabular-nums text-white/30">
+                  {{ Math.round((mapping.x || 0.5) * 100) }}%, {{ Math.round((mapping.y || 0.5) * 100) }}%
+                </span>
+                <button
+                  class="text-[10px] font-bold text-red-400 hover:text-white hover:bg-red-500/40 px-2 py-1 rounded border border-red-500/20 transition-all"
+                  @click="removeMapping(mapping.entity_id)"
+                >
+                  删除
+                </button>
               </div>
             </div>
             <div v-if="!localSettings.entity_mapping?.length" class="text-xs text-white/30 text-center py-4 bg-white/5 rounded-xl border border-dashed border-white/10">
-              暂无映射实体。在主视图里点击「+ 添加实体到视图」
+              暂无映射实体。在主视图里点击“添加实体”完成布局。
             </div>
           </div>
         </div>
       </template>
 
-      <!-- 系统 -->
-      <template v-if="currentTab === 'system'">
+      <template v-else-if="currentTab === 'system'">
         <div class="glass-effect rounded-xl p-4">
           <div class="text-sm font-medium mb-3">系统信息</div>
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -256,15 +397,11 @@
             </div>
             <div class="bg-white/5 rounded-lg p-3">
               <div class="text-white/40 mb-1">HA 连接</div>
-              <div class="font-mono" :class="haConnected ? 'text-emerald-400' : 'text-red-400'">
-                {{ haConnected ? '已连接' : '未连接' }}
-              </div>
+              <div class="font-mono" :class="haConnected ? 'text-emerald-400' : 'text-red-400'">{{ haConnected ? '已连接' : '未连接' }}</div>
             </div>
             <div class="bg-white/5 rounded-lg p-3">
               <div class="text-white/40 mb-1">MA 连接</div>
-              <div class="font-mono" :class="maConnected ? 'text-emerald-400' : 'text-red-400'">
-                {{ maConnected ? '已连接' : '未连接' }}
-              </div>
+              <div class="font-mono" :class="maConnected ? 'text-emerald-400' : 'text-red-400'">{{ maConnected ? '已连接' : '未连接' }}</div>
             </div>
             <div class="bg-white/5 rounded-lg p-3">
               <div class="text-white/40 mb-1">MA 播放器</div>
@@ -277,57 +414,51 @@
           </div>
         </div>
       </template>
-
     </div>
 
-    <!-- 底部保存按钮 -->
     <div class="shrink-0 px-4 pb-4 pt-2 border-t border-white/10 flex items-center gap-3">
       <span class="text-xs" :class="saveStatusClass">{{ saveStatusText }}</span>
       <div class="flex-1"></div>
-      <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
-        :disabled="saving || !isDirty" @click="saveSettings">
+      <button
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+        :disabled="saving || !isDirty"
+        @click="saveSettings"
+      >
         {{ saving ? '保存中...' : '保存设置' }}
       </button>
     </div>
-
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
+  settings: { type: Object, default: () => ({}) },
   haEntities: { type: Array, default: () => [] },
   haConnected: { type: Boolean, default: false },
   maConnected: { type: Boolean, default: false },
   maState: { type: Object, default: () => ({}) },
-  systemStatus: { type: Object, default: () => ({}) },
-  sidebarWidgets: { type: Object, default: () => ({}) },
-  weatherEntityId: { type: String, default: '' },
+  systemStatus: { type: Object, default: () => ({}) }
 })
 
-const emit = defineEmits(['save', 'restart', 'toggle-sidebar', 'settings-loaded'])
+const emit = defineEmits(['save'])
 
 const tabs = [
   { id: 'connection', label: '连接', icon: '🔗' },
   { id: 'display', label: '显示', icon: '🖥️' },
-  { id: 'floorplan', label: '户型图', icon: '🏠' },
-  { id: 'system', label: '系统', icon: 'ℹ️' },
+  { id: 'floorplan', label: '户型图', icon: '🗺️' },
+  { id: 'system', label: '系统', icon: 'ℹ️' }
 ]
 
-const currentTab = ref('connection')
-const saving = ref(false)
-const saveStatus = ref('idle')
-const isDirty = ref(false)
-
-const widgetLabels = {
-  weather: '🌤️ 天气概览',
-  stats: '📊 统计概览',
-  lights: '💡 灯光快捷',
-  climate: '❄️ 空调快捷',
-  battery: '🔋 低电量',
-  offline: '📡 离线设备',
-  music: '🎵 音乐播放',
+const defaultSidebarWidgets = {
+  weather: true,
+  stats: true,
+  lights: true,
+  climate: true,
+  battery: true,
+  offline: true,
+  music: true
 }
 
 const defaultSettings = () => ({
@@ -341,58 +472,103 @@ const defaultSettings = () => ({
   humidity_entity: '',
   show_sidebar: true,
   clock_24h: true,
-  sidebar_widgets: {
-    weather: true, stats: true, lights: true, climate: true,
-    battery: true, offline: true, music: true
-  },
+  show_seconds: false,
+  kiosk_mode: true,
+  sidebar_widgets: { ...defaultSidebarWidgets },
   weather_entity_id: '',
   selected_light_entities: [],
   selected_climate_entities: [],
   selected_battery_entities: [],
   selected_offline_entities: [],
   entity_mapping: [],
+  floor_plan_image: '',
+  ha_token_masked: '',
+  ma_token_masked: ''
 })
 
+const currentTab = ref('connection')
+const saving = ref(false)
+const saveStatus = ref('idle')
+const isDirty = ref(false)
 const localSettings = ref(defaultSettings())
-const selectAllLights = ref(false)
-const selectAllClimates = ref(false)
 
-const allLights = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('light.')))
-const allClimates = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('climate.')))
-const batteryEntities = computed(() =>
-  props.haEntities.filter(e => {
-    const a = e.attributes || {}
-    return a.device_class === 'battery'
-  })
+const widgetLabels = {
+  weather: '🌤️ 天气概览',
+  stats: '📊 统计概览',
+  lights: '💡 灯光快捷',
+  climate: '❄️ 空调快捷',
+  battery: '🔋 低电量',
+  offline: '📡 离线设备',
+  music: '🎵 音乐播放'
+}
+
+watch(
+  () => props.settings,
+  (settings) => {
+    localSettings.value = {
+      ...defaultSettings(),
+      ...settings,
+      sidebar_widgets: {
+        ...defaultSidebarWidgets,
+        ...(settings?.sidebar_widgets || {})
+      }
+    }
+  },
+  { immediate: true, deep: true }
 )
+
+const allLights = computed(() => props.haEntities.filter((entity) => entity.entity_id.startsWith('light.')))
+const allClimates = computed(() => props.haEntities.filter((entity) => entity.entity_id.startsWith('climate.')))
+const batteryEntities = computed(() => props.haEntities.filter((entity) => entity.attributes?.device_class === 'battery'))
 const allEntities = computed(() => props.haEntities)
-const weatherEntities = computed(() => props.haEntities.filter(e => e.entity_id.startsWith('weather.')))
+const weatherEntities = computed(() => props.haEntities.filter((entity) => entity.entity_id.startsWith('weather.')))
+const temperatureEntities = computed(() => props.haEntities.filter((entity) => entity.attributes?.device_class === 'temperature'))
+const humidityEntities = computed(() => props.haEntities.filter((entity) => entity.attributes?.device_class === 'humidity'))
+
 const groupedMappings = computed(() => {
   const groups = {}
-  const items = localSettings.value.entity_mapping || []
-  items.forEach(item => {
+  for (const item of localSettings.value.entity_mapping || []) {
     const type = item.type || '其他'
     if (!groups[type]) groups[type] = []
     groups[type].push(item)
-  })
+  }
   return groups
+})
+
+const selectAllLights = computed({
+  get: () => allLights.value.length > 0 && localSettings.value.selected_light_entities.length === allLights.value.length,
+  set: (checked) => {
+    localSettings.value.selected_light_entities = checked ? allLights.value.map((entity) => entity.entity_id) : []
+    markDirty()
+  }
+})
+
+const selectAllClimates = computed({
+  get: () => allClimates.value.length > 0 && localSettings.value.selected_climate_entities.length === allClimates.value.length,
+  set: (checked) => {
+    localSettings.value.selected_climate_entities = checked ? allClimates.value.map((entity) => entity.entity_id) : []
+    markDirty()
+  }
 })
 
 const haConnectedText = computed(() => props.haConnected ? '已连接' : '未连接')
 const maConnectedText = computed(() => props.maConnected ? '已连接' : '未连接')
 const haConnectedClass = computed(() => props.haConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400')
 const maConnectedClass = computed(() => props.maConnected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400')
+
 const saveStatusText = computed(() => {
-  if (saveStatus.value === 'success') return '已保存，自动重连中...'
+  if (saveStatus.value === 'success') return '已保存'
   if (saveStatus.value === 'error') return '保存失败'
   if (isDirty.value) return '有未保存的更改'
   return ''
 })
+
 const saveStatusClass = computed(() => {
   if (saveStatus.value === 'success') return 'text-emerald-400'
   if (saveStatus.value === 'error') return 'text-red-400'
   return 'text-white/30'
 })
+
 const systemInfo = computed(() => ({
   version: '1.0.0',
   ha_entity_count: props.haEntities.length,
@@ -400,47 +576,53 @@ const systemInfo = computed(() => ({
   ws_clients: props.systemStatus.ws_clients || 0
 }))
 
-const markDirty = () => { isDirty.value = true }
+const markDirty = () => {
+  isDirty.value = true
+}
 
 const toggleAllLights = () => {
-  localSettings.value.selected_light_entities = selectAllLights.value
-    ? allLights.value.map(e => e.entity_id)
-    : []
-  markDirty()
+  selectAllLights.value = !selectAllLights.value
 }
 
 const toggleAllClimates = () => {
-  localSettings.value.selected_climate_entities = selectAllClimates.value
-    ? allClimates.value.map(e => e.entity_id)
-    : []
-  markDirty()
+  selectAllClimates.value = !selectAllClimates.value
 }
 
 const entityTypeIcon = (type) => {
-  return { '灯': '💡', '空调': '❄️', '传感器': '🌡️', '开关': '🔌', '其他': '📦' }[type] || '📦'
+  return {
+    灯: '💡',
+    空调: '❄️',
+    传感器: '🌡️',
+    开关: '🔌',
+    窗帘: '🪟',
+    其他: '📦'
+  }[type] || '📦'
 }
 
-const removeMapping = (entity_id) => {
-  localSettings.value.entity_mapping = (localSettings.value.entity_mapping || []).filter(m => m.entity_id !== entity_id)
+const removeMapping = (entityId) => {
+  localSettings.value.entity_mapping = (localSettings.value.entity_mapping || []).filter((item) => item.entity_id !== entityId)
   markDirty()
 }
 
 const saveSettings = async () => {
   saving.value = true
   saveStatus.value = 'idle'
+
   try {
-    const r = await fetch('/api/settings', {
+    const response = await fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(localSettings.value)
     })
-    if (!r.ok) throw new Error(await r.text())
+    if (!response.ok) throw new Error(await response.text())
+
+    const data = await response.json()
     saveStatus.value = 'success'
     isDirty.value = false
-    emit('save', localSettings.value)
-    setTimeout(() => { saveStatus.value = 'idle' }, 4000)
-  } catch (e) {
-    console.error('Save failed:', e)
+    emit('save', data.settings || localSettings.value)
+    setTimeout(() => { saveStatus.value = 'idle' }, 3000)
+  } catch (error) {
+    console.error('Save failed:', error)
     saveStatus.value = 'error'
     setTimeout(() => { saveStatus.value = 'idle' }, 3000)
   } finally {
@@ -449,51 +631,18 @@ const saveSettings = async () => {
 }
 
 const testHAConnection = () => {
-  const msg = props.haConnected
+  const message = props.haConnected
     ? `✅ HA 已连接\n实体数: ${props.haEntities.length}`
-    : `❌ HA 未连接\n请检查 URL 和 Token`
-  alert(msg)
+    : '❌ HA 未连接\n请检查 URL 和 Token'
+  alert(message)
 }
 
 const testMAConnection = () => {
-  const msg = props.maConnected ? '✅ MA 已连接' : '❌ MA 未连接\n请检查 URL 和 Token'
-  alert(msg)
+  const message = props.maConnected
+    ? `✅ MA 已连接\n播放器数: ${(props.maState.players || []).length}`
+    : '❌ MA 未连接\n请检查 URL 和 Token'
+  alert(message)
 }
-
-const loadSettings = async () => {
-  try {
-    const r = await fetch('/api/settings')
-    if (r.ok) {
-      const data = await r.json()
-      const s = data.settings || {}
-      localSettings.value = {
-        ...defaultSettings(),
-        ha_url: s.ha_url || '',
-        ha_token: s.ha_token || '',
-        ma_url: s.ma_url || '',
-        ma_token: s.ma_token || '',
-        ha_refresh_interval: s.ha_refresh_interval || 15,
-        ma_refresh_interval: s.ma_refresh_interval || 5,
-        temperature_entity: s.temperature_entity || '',
-        humidity_entity: s.humidity_entity || '',
-        entity_mapping: s.entity_mapping || [],
-        show_sidebar: s.show_sidebar !== undefined ? s.show_sidebar : true,
-        clock_24h: s.clock_24h !== undefined ? s.clock_24h : true,
-        sidebar_widgets: s.sidebar_widgets || { weather: true, stats: true, lights: true, climate: true, battery: true, offline: true, music: true },
-        weather_entity_id: s.weather_entity_id || '',
-        selected_light_entities: s.selected_light_entities || [],
-        selected_climate_entities: s.selected_climate_entities || [],
-        selected_battery_entities: s.selected_battery_entities || [],
-        selected_offline_entities: s.selected_offline_entities || [],
-      }
-    }
-  } catch (e) {
-    console.error('Failed to load settings:', e)
-  }
-  emit('settings-loaded', localSettings.value)
-}
-
-onMounted(loadSettings)
 </script>
 
 <style scoped>
@@ -507,12 +656,26 @@ onMounted(loadSettings)
   outline: none;
   transition: all 0.2s ease;
 }
+
 .settings-input:focus {
   border-color: rgba(6, 182, 212, 0.5);
   background-color: rgba(255, 255, 255, 0.1);
 }
-.settings-input::placeholder { color: rgba(255, 255, 255, 0.25); }
-.settings-view { color: white; }
-.settings-view ::-webkit-scrollbar { width: 4px; }
-.settings-view ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+.settings-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.settings-view {
+  color: white;
+}
+
+.settings-view ::-webkit-scrollbar {
+  width: 4px;
+}
+
+.settings-view ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
 </style>

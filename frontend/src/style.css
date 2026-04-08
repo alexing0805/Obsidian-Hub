@@ -1,17 +1,13 @@
-/* 字体由 @fontsource 包本地提供，无需 CDN */
-@import '@fontsource/outfit';
-/* Noto Sans SC: 400 完整 + chinese-simplified 补全700（包含全部中文字符） */
-@import '@fontsource/noto-sans-sc/400.css';
-@import '@fontsource/noto-sans-sc/chinese-simplified-700.css';
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --glass-bg: rgba(13, 18, 30, 0.85); /* 提高不透明度，减小模糊压力 */
+  --glass-bg: rgba(13, 18, 30, 0.85);
   --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-blur: 10px; /* 降低模糊半径，显著提升 Tab A8 流畅度 */
+  --glass-blur: 10px;
+  --glass-effect-blur: 20px;
+  --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   --accent-cyan: #22d3ee;
   --accent-blue: #3b82f6;
   --accent-yellow: #fbbf24;
@@ -25,7 +21,7 @@
 }
 
 body {
-  font-family: 'Noto Sans SC', 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   background: radial-gradient(circle at 15% 15%, #16213e 0%, #0f172a 40%, #020617 100%);
   color: #f8fafc;
   overflow: hidden;
@@ -33,40 +29,35 @@ body {
 }
 
 h1, h2, h3, .font-heading {
-  font-family: 'Outfit', 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Segoe UI Semibold', 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
-/* 确保所有文字默认使用支持中文的字体栈 */
 body, button, input, select, textarea {
-  font-family: 'Noto Sans SC', 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif !important;
 }
 
-
-
-/* 高级玻璃拟态 */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* 简化阴影 */
-  will-change: backdrop-filter; /* 提升渲染性能 */
+  box-shadow: var(--glass-shadow);
 }
 
 .glass-effect {
   background: rgba(13, 18, 28, 0.72);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--glass-effect-blur));
+  -webkit-backdrop-filter: blur(var(--glass-effect-blur));
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .grid-pattern {
-  background-image: 
+  background-image:
     linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
   background-size: 50px 50px;
 }
 
-/* 动效与交互 */
 .card-hover {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -83,7 +74,6 @@ body, button, input, select, textarea {
   color: #fff;
 }
 
-/* 光晕效果 */
 .glow-yellow {
   filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
 }
@@ -92,7 +82,6 @@ body, button, input, select, textarea {
   filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.6));
 }
 
-/* 平板触控滚动条优化 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -111,7 +100,6 @@ body, button, input, select, textarea {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* 页面切换动画 */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
@@ -121,15 +109,16 @@ body, button, input, select, textarea {
   transform: translateY(10px);
 }
 
-/* 音乐柱状图动画 */
 @keyframes music-bar {
   0% { height: 6px; transform: scaleY(1); }
   50% { height: 18px; transform: scaleY(1.2); }
   100% { height: 6px; transform: scaleY(1); }
 }
-.music-bar-item { will-change: height, transform; }
 
-/* 文字渐显动画 */
+.music-bar-item {
+  will-change: height, transform;
+}
+
 .text-reveal {
   animation: text-reveal 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -137,4 +126,53 @@ body, button, input, select, textarea {
 @keyframes text-reveal {
   0% { transform: translateY(10px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
+}
+
+body.kiosk-mode {
+  --glass-bg: rgba(12, 18, 28, 0.96);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-blur: 2px;
+  --glass-effect-blur: 4px;
+  --glass-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  background: #0b1220;
+}
+
+body.kiosk-mode .grid-pattern {
+  background-image: none;
+}
+
+body.kiosk-mode .card-hover,
+body.kiosk-mode .fade-enter-active,
+body.kiosk-mode .fade-leave-active,
+body.kiosk-mode .music-bar-item,
+body.kiosk-mode .text-reveal,
+body.kiosk-mode .animate-pulse,
+body.kiosk-mode .animate-bounce-subtle,
+body.kiosk-mode .animate-fade-in {
+  animation: none !important;
+  transition: none !important;
+}
+
+body.kiosk-mode .card-hover:hover {
+  transform: none;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--glass-shadow);
+}
+
+body.kiosk-mode .glow-yellow,
+body.kiosk-mode .glow-blue {
+  filter: none;
+}
+
+body.kiosk-mode .glass-panel,
+body.kiosk-mode .glass-effect {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body.kiosk-mode main,
+body.kiosk-mode aside,
+body.kiosk-mode .glass-panel,
+body.kiosk-mode .glass-effect {
+  contain: layout paint;
 }

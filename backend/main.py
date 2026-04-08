@@ -56,20 +56,29 @@ def to_ma_base_url(ma_ws_url: str) -> str:
     return urlunparse((scheme, parsed.netloc, "", "", "", "")).rstrip("/")
 
 
+def parse_cors_origins(value: str) -> list[str]:
+    raw = (value or "").strip()
+    if not raw:
+        return [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+
 # ── Config (loaded from settings.json, env vars are first-run fallbacks) ────
 _HOST = os.getenv("HOST", "0.0.0.0")
 _PORT = int(os.getenv("PORT", "8000"))
 _MA_COMMAND_TIMEOUT = int(os.getenv("MA_COMMAND_TIMEOUT", "10"))
+_CORS_ALLOW_ORIGINS = parse_cors_origins(os.getenv("CORS_ALLOW_ORIGINS", ""))
 
 # These will be overridden once settings are loaded
 _HA_URL = normalize_ha_url(os.getenv("HA_URL", ""))
 _HA_TOKEN = os.getenv("HA_TOKEN", "").strip()
 _MA_URL = normalize_ma_url(os.getenv("MA_URL", ""))
 _MA_TOKEN = os.getenv("MA_TOKEN", "").strip()
-
-
-def _get_ha_config():
-    return {"url": _HA_URL, "token": _HA_TOKEN}
 
 
 def _get_ma_config():
@@ -86,7 +95,7 @@ def _reload_ha_ma_from_settings(settings: dict):
 app = FastAPI(title="Obsidian Hub API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -178,6 +187,17 @@ def choose_by_device_class(
     return candidates[0][1]
 
 
+def choose_entity_by_id(
+    entities: Iterable[dict[str, Any]], entity_id: Optional[str]
+) -> Optional[dict[str, Any]]:
+    if not entity_id:
+        return None
+    for entity in entities:
+        if entity.get("entity_id") == entity_id:
+            return entity
+    return None
+
+
 def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, Any] = None) -> dict[str, Any]:
     lights = [entity for entity in entities if entity["entity_id"].startswith("light.")]
     climates = [entity for entity in entities if entity["entity_id"].startswith("climate.")]
@@ -205,10 +225,14 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, An
             if battery_level is not None and battery_level <= 20:
                 low_battery_count += 1
 
-    temperature_entity = choose_by_device_class(
+    temperature_entity = choose_entity_by_id(
+        entities, current_settings.get("temperature_entity")
+    ) or choose_by_device_class(
         entities, "temperature", preferred_min=5, preferred_max=45
     )
-    humidity_entity = choose_by_device_class(
+    humidity_entity = choose_entity_by_id(
+        entities, current_settings.get("humidity_entity")
+    ) or choose_by_device_class(
         entities, "humidity", preferred_min=10, preferred_max=95
     )
 
@@ -217,6 +241,9 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, An
         "lights_total": len(lights),
         "lights_on": sum(1 for light in lights if light.get("state") == "on"),
         "climate_total": len(climates),
+        "climate_active": sum(
+            1 for climate in climates if str(climate.get("state")).lower() != "off"
+        ),
         "low_battery_count": low_battery_count,
         "offline_count": offline_count,
         "temperature": (
@@ -608,7 +635,7 @@ manual_active_queue_id: Optional[str] = None
 
 
 async def refresh_ma_state_once() -> bool:
-    global ma_state, ma_signature
+    global ma_state, ma_signature, manual_active_player_id, manual_active_queue_id
 
     if not ma_client.connected_event.is_set():
         next_state = {
@@ -624,6 +651,18 @@ async def refresh_ma_state_once() -> bool:
     else:
         next_state = await ma_client.refresh_state()
         # Override with manual selection if exists
+        player_ids = {
+            player.get("player_id") for player in next_state.get("players", []) if player.get("player_id")
+        }
+        queue_ids = {
+            queue.get("queue_id") for queue in next_state.get("queues", []) if queue.get("queue_id")
+        }
+
+        if manual_active_player_id and manual_active_player_id not in player_ids:
+            manual_active_player_id = None
+        if manual_active_queue_id and manual_active_queue_id not in queue_ids:
+            manual_active_queue_id = None
+
         if manual_active_player_id:
             next_state["active_player_id"] = manual_active_player_id
         if manual_active_queue_id:
@@ -821,8 +860,10 @@ async def get_settings():
         "success": True,
         "settings": {
             **current_settings,
-            "ha_token": _HA_TOKEN,
-            "ma_token": _MA_TOKEN,
+            "ha_token": "",
+            "ma_token": "",
+            "ha_token_masked": ("***" + _HA_TOKEN[-8:]) if _HA_TOKEN else "",
+            "ma_token_masked": ("***" + _MA_TOKEN[-8:]) if _MA_TOKEN else "",
         }
     }
 
@@ -836,7 +877,7 @@ async def update_settings(new_settings: dict[str, Any]):
         "ha_refresh_interval", "ma_refresh_interval",
         "temperature_entity", "humidity_entity",
         "entity_mapping",
-        "show_sidebar", "clock_24h",
+        "show_sidebar", "clock_24h", "show_seconds", "kiosk_mode",
         "sidebar_widgets",
         "weather_entity_id",
         "selected_light_entities",
@@ -846,11 +887,23 @@ async def update_settings(new_settings: dict[str, Any]):
         "floor_plan_image",
     }
     filtered = {k: v for k, v in new_settings.items() if k in allowed}
+    for token_key in ("ha_token", "ma_token"):
+        if token_key in filtered and not str(filtered[token_key] or "").strip():
+            filtered.pop(token_key)
     current_settings.update(filtered)
     save_settings(current_settings)
     _reload_ha_ma_from_settings(current_settings)
     asyncio.create_task(_reload_connections())
-    return {"success": True, "settings": {**current_settings, "ha_token": _HA_TOKEN, "ma_token": _MA_TOKEN}}
+    return {
+        "success": True,
+        "settings": {
+            **current_settings,
+            "ha_token": "",
+            "ma_token": "",
+            "ha_token_masked": ("***" + _HA_TOKEN[-8:]) if _HA_TOKEN else "",
+            "ma_token_masked": ("***" + _MA_TOKEN[-8:]) if _MA_TOKEN else "",
+        },
+    }
 
 
 @app.post("/api/restart")
@@ -927,6 +980,8 @@ DEFAULT_SETTINGS = {
     "entity_mapping": [],  # [{entity_id, x, y, type, label}, ...]
     "show_sidebar": True,
     "clock_24h": True,
+    "show_seconds": False,
+    "kiosk_mode": True,
     "sidebar_widgets": {
         "weather": True,
         "stats": True,
