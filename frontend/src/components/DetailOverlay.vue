@@ -4,7 +4,7 @@
 
     <div
       class="relative glass-panel rounded-[2.5rem] w-full flex flex-col overflow-hidden shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] border-white/10 ring-1 ring-white/5 animate-fade-in"
-      :class="type === 'weather' ? 'max-w-3xl max-h-[84vh]' : 'max-w-5xl max-h-[88vh]'"
+      :class="type === 'weather' ? 'max-w-4xl max-h-[88vh]' : 'max-w-5xl max-h-[88vh]'"
     >
       <div class="flex items-center justify-between px-8 py-5 border-b border-white/5 shrink-0 bg-white/5">
         <div class="flex items-center gap-4 text-2xl font-extrabold font-heading tracking-tight text-white/90">
@@ -131,7 +131,7 @@
                 <div>
                   <h3 class="text-xl font-black text-white tracking-tight">{{ cover.attributes?.friendly_name || cover.entity_id }}</h3>
                   <p class="text-[10px] font-black uppercase tracking-[0.35em] text-blue-400/60 mt-1">
-                    {{ cover.state === 'open' ? '已开启' : cover.state === 'closed' ? '已关闭' : cover.state }}
+                    {{ coverStateLabel(cover.state) }}
                   </p>
                 </div>
                 <div class="text-4xl">🪟</div>
@@ -142,21 +142,27 @@
                   class="flex flex-col items-center gap-2 p-4 rounded-[1.4rem] glass-effect border border-white/5 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all"
                   @click="emitCoverService(cover, 'open_cover')"
                 >
-                  <span class="text-xl">⬆</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7" />
+                  </svg>
                   <span class="text-[10px] font-black uppercase tracking-widest text-white/50">开启</span>
                 </button>
                 <button
                   class="flex flex-col items-center gap-2 p-4 rounded-[1.4rem] glass-effect border border-white/5 hover:border-white/30 hover:bg-white/10 transition-all"
                   @click="emitCoverService(cover, 'stop_cover')"
                 >
-                  <span class="text-xl">⏹</span>
+                  <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
                   <span class="text-[10px] font-black uppercase tracking-widest text-white/50">停止</span>
                 </button>
                 <button
                   class="flex flex-col items-center gap-2 p-4 rounded-[1.4rem] glass-effect border border-white/5 hover:border-blue-500/40 hover:bg-blue-500/10 transition-all"
                   @click="emitCoverService(cover, 'close_cover')"
                 >
-                  <span class="text-xl">⬇</span>
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
                   <span class="text-[10px] font-black uppercase tracking-widest text-white/50">关闭</span>
                 </button>
               </div>
@@ -209,6 +215,47 @@
                 <div class="text-xl mb-1 opacity-80">{{ attr.icon }}</div>
                 <div class="text-[9px] font-black text-white/20 uppercase tracking-widest mb-0.5">{{ attr.label }}</div>
                 <div class="text-sm font-black text-white">{{ attr.value }}</div>
+              </div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex items-center gap-1 p-1 bg-black/20 rounded-xl w-fit mx-auto border border-white/5">
+                <button
+                  v-for="mode in ['daily', 'hourly']"
+                  :key="mode"
+                  class="px-5 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all"
+                  :class="forecastMode === mode ? 'bg-white/10 text-cyan-400 shadow-lg' : 'text-white/40 hover:text-white/60'"
+                  @click="forecastMode = mode"
+                >
+                  {{ mode === 'daily' ? '每日' : '每小时' }}
+                </button>
+              </div>
+
+              <div v-if="forecastMode === 'daily'" class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hidden">
+                <div
+                  v-for="(fc, idx) in dailyForecast"
+                  :key="idx"
+                  class="flex-shrink-0 w-24 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5 bg-gradient-to-b from-white/5 to-transparent"
+                >
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-2 tracking-wider">{{ fc.weekday }}</span>
+                  <span class="text-3xl mb-3">{{ weatherEmojiFor(fc.condition) }}</span>
+                  <div class="flex flex-col items-center gap-0.5">
+                    <span class="text-sm font-black text-white">{{ fc.tempHigh }}</span>
+                    <span class="text-[10px] font-bold text-white/20">{{ fc.tempLow }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-else class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-hidden">
+                <div
+                  v-for="(fc, idx) in hourlyForecast"
+                  :key="idx"
+                  class="flex-shrink-0 w-20 glass-panel p-4 rounded-[1.5rem] flex flex-col items-center border border-white/5 bg-gradient-to-b from-white/5 to-transparent"
+                >
+                  <span class="text-[10px] font-black text-white/30 uppercase mb-2 tracking-wider">{{ fc.hour }}</span>
+                  <span class="text-2xl mb-2">{{ weatherEmojiFor(fc.condition) }}</span>
+                  <span class="text-sm font-black text-white">{{ fc.temp }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -267,7 +314,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import MusicAssistantPlayer from './MusicAssistantPlayer.vue'
 
 const props = defineProps({
@@ -306,6 +353,7 @@ const titleMap = {
 
 const titleIcon = computed(() => titleMap[props.type]?.icon || '')
 const titleText = computed(() => titleMap[props.type]?.text || '')
+const forecastMode = ref('daily')
 
 const displayLights = computed(() => {
   const all = filterBySelected(
@@ -380,15 +428,17 @@ const weatherHigh = computed(() => {
   return value !== undefined && value !== null ? `${Math.round(Number(value))}°` : '--'
 })
 
-const weatherEmoji = computed(() => {
-  const state = (weatherText.value || '').toLowerCase()
+const weatherEmojiFor = (condition) => {
+  const state = String(condition || '').toLowerCase()
   if (state.includes('rain')) return '🌧️'
   if (state.includes('cloud')) return '☁️'
   if (state.includes('sun') || state.includes('clear')) return '☀️'
   if (state.includes('snow')) return '❄️'
   if (state.includes('fog') || state.includes('mist')) return '🌫️'
   return '🌤️'
-})
+}
+
+const weatherEmoji = computed(() => weatherEmojiFor(weatherText.value))
 
 const weatherAttrs = computed(() => {
   if (!weatherEntity.value) return []
@@ -400,6 +450,29 @@ const weatherAttrs = computed(() => {
     { key: 'wind_speed', label: '风速', value: `${summaryWeather.wind_speed ?? attrs.wind_speed ?? '--'} km/h`, icon: '🌀' },
     { key: 'visibility', label: '能见度', value: `${summaryWeather.visibility ?? attrs.visibility ?? '--'} km`, icon: '👁️' }
   ]
+})
+
+const dailyForecast = computed(() => {
+  const forecast = props.summary?.weather?.forecast || weatherEntity.value?.attributes?.forecast || []
+  return forecast.slice(0, 7).map((item) => {
+    const high = item.temperature ?? item.temp_high ?? item.max_temp
+    const low = item.templow ?? item.temperature_low ?? item.min_temp
+    return {
+      weekday: item.datetime ? new Date(item.datetime).toLocaleDateString('zh-CN', { weekday: 'short' }) : '--',
+      condition: item.condition,
+      tempHigh: high !== undefined && high !== null ? `${Math.round(Number(high))}°` : '--',
+      tempLow: low !== undefined && low !== null ? `${Math.round(Number(low))}°` : '--'
+    }
+  })
+})
+
+const hourlyForecast = computed(() => {
+  const forecast = props.summary?.weather?.hourly_forecast || []
+  return forecast.slice(0, 24).map((item) => ({
+    hour: item.datetime ? `${String(new Date(item.datetime).getHours()).padStart(2, '0')}:00` : '--',
+    condition: item.condition,
+    temp: item.temperature !== undefined && item.temperature !== null ? `${Math.round(Number(item.temperature))}°` : '--'
+  }))
 })
 
 const getHvacModes = (climate) => {
@@ -425,6 +498,13 @@ const setFanMode = (entity, fan) => emit('climate-action', { entity, action: 'fa
 const getCoverPosition = (cover) => {
   const position = Number(cover.attributes?.current_position)
   return Number.isFinite(position) ? position : (String(cover.state).toLowerCase() === 'open' ? 100 : 0)
+}
+
+const coverStateLabel = (state) => {
+  const value = String(state || '').toLowerCase()
+  if (value === 'open') return '已开启'
+  if (value === 'closed') return '已关闭'
+  return state || '--'
 }
 
 const emitCoverService = (cover, service) => {
@@ -454,5 +534,9 @@ const onCoverPositionChange = (cover, event) => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }
 </style>

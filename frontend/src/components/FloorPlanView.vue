@@ -13,7 +13,8 @@
       <div
         v-for="mapping in displayMappings"
         :key="mapping.entity_id"
-        class="entity-item absolute flex flex-col items-center cursor-pointer select-none group overflow-visible"
+        class="entity-item absolute flex flex-col items-center select-none group overflow-visible"
+        :class="mapping.isClickable ? 'cursor-pointer' : 'cursor-default'"
         :style="mapping.style"
         @click.stop="onIconClick(mapping)"
         @mousedown.stop="startDrag(mapping, $event)"
@@ -29,8 +30,11 @@
           class="metric-card glass-panel"
           :class="[mapping.panelClass, mapping.metricCardClass]"
         >
-          <div class="metric-value">{{ mapping.metricValue }}</div>
-          <div class="metric-unit">{{ mapping.metricUnit }}</div>
+          <div class="metric-reading">
+            <span class="metric-value">{{ mapping.metricValue }}</span>
+            <span class="metric-unit">{{ mapping.metricUnit }}</span>
+          </div>
+          <div class="metric-label">{{ mapping.metricLabel }}</div>
         </div>
 
         <div
@@ -81,7 +85,6 @@
         <button
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all shadow-lg"
           :class="editMode ? 'text-cyan-300 border border-cyan-500/50 bg-cyan-500/10' : 'border-white/10'"
-          title="编辑户型图"
           @click="editMode = !editMode"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -92,7 +95,6 @@
         <button
           v-if="editMode"
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-all shadow-lg"
-          title="添加实体"
           @click="showAddDrawer = true"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -103,7 +105,6 @@
         <label
           v-if="editMode"
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/60 border border-white/10 hover:bg-white/10 hover:text-white/80 transition-all shadow-lg cursor-pointer"
-          title="上传户型图"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
@@ -114,7 +115,6 @@
         <button
           v-if="editMode && hasChanges"
           class="w-14 h-14 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/50 bg-emerald-500/10 shadow-lg animate-pulse"
-          title="保存更改"
           @click="savePositions"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,10 +133,6 @@
         >
           {{ layer.label }}
         </button>
-      </div>
-
-      <div v-if="editMode" class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-effect rounded-xl px-5 py-2.5 text-sm text-white/50 shadow-lg">
-        点击图标控制设备，编辑模式下可拖动位置并保存。
       </div>
     </template>
 
@@ -176,9 +172,6 @@
                 添加
               </button>
             </div>
-            <div v-if="availableEntities.length === 0" class="text-center py-20 text-white/20 text-lg">
-              没有找到可添加的实体
-            </div>
           </div>
         </div>
       </div>
@@ -207,8 +200,6 @@ const layers = [
   { id: 'Balcony', label: '阳台' }
 ]
 
-const lightIconOptions = ['bulb', 'ceiling', 'lamp', 'spot', 'strip']
-
 const planContainer = ref(null)
 const editMode = ref(false)
 const dragging = ref(false)
@@ -223,9 +214,7 @@ const activeLayer = ref('All')
 
 const entitiesById = computed(() => {
   const map = new Map()
-  for (const entity of props.haEntities) {
-    map.set(entity.entity_id, entity)
-  }
+  for (const entity of props.haEntities) map.set(entity.entity_id, entity)
   return map
 })
 
@@ -256,193 +245,29 @@ const getSensorDisplayMode = (entity) => {
 
 const getMetricMeta = (entity) => {
   const deviceClass = String(entity?.attributes?.device_class || '').toLowerCase()
-  if (deviceClass === 'humidity') {
-    return { unit: '%', className: 'metric-humidity' }
-  }
-  return { unit: '°', className: 'metric-temperature' }
+  if (deviceClass === 'humidity') return { unit: '%', className: 'metric-humidity', label: 'Humidity' }
+  return { unit: '°', className: 'metric-temperature', label: 'Temp' }
 }
-
-const displayMappings = computed(() => {
-  const baseMappings = activeLayer.value === 'All'
-    ? localMappings.value
-    : localMappings.value.filter((mapping) => mapping.layer === activeLayer.value)
-
-  return baseMappings.map((mapping) => {
-    const entity = entitiesById.value.get(mapping.entity_id)
-    const state = entity?.state || 'off'
-    const animated = !props.kioskMode
-    const active = isEntityActive(entity)
-    const displayMode = getDisplayMode(entity, mapping)
-    const metricMeta = displayMode === 'metric' ? getMetricMeta(entity) : null
-    const metricValue = displayMode === 'metric' ? parseMetricValue(entity) : null
-    const badgeValue = displayMode === 'metric' ? null : getEntityBadgeValue(entity)
-
-    return {
-      ...mapping,
-      entity,
-      state,
-      displayMode,
-      metricValue: metricValue ?? '--',
-      metricUnit: metricMeta?.unit || '',
-      metricCardClass: metricMeta?.className || '',
-      badgeValue,
-      iconComponent: resolveEntityIcon(entity, mapping),
-      showGlow: animated && active && mapping.type === 'light',
-      showIndicator: animated && active && mapping.type === 'light',
-      panelClass: active ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5',
-      iconClass: active ? activeColorClass(mapping.type, entity) : 'text-white/40',
-      style: {
-        left: `${(mapping.x || 0.5) * 100}%`,
-        top: `${(mapping.y || 0.5) * 100}%`,
-        transform: 'translate(-50%, -50%)',
-        zIndex: active ? 5 : 4
-      }
-    }
-  })
-})
-
-const showLabels = computed(() => editMode.value || activeLayer.value !== 'All')
-
-const bgStyle = computed(() => {
-  if (localBgImage.value) {
-    return {
-      backgroundImage: `url(${localBgImage.value})`,
-      backgroundSize: 'contain',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat'
-    }
-  }
-
-  return {
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
-  }
-})
-
-const previewStyle = computed(() => ({
-  left: `${previewPos.value.x}px`,
-  top: `${previewPos.value.y}px`,
-  transform: 'translate(-50%, -50%)',
-  color: '#60a5fa'
-}))
 
 const defaultIconVariant = (entity) => {
   if (!entity?.entity_id?.startsWith('light.')) return ''
-  const icon = String(entity.attributes?.icon || '')
-  const name = String(entity.attributes?.friendly_name || entity.entity_id).toLowerCase()
-  if (icon.includes('chandelier') || name.includes('吊灯')) return 'ceiling'
-  if (icon.includes('desk') || name.includes('台灯')) return 'lamp'
-  if (icon.includes('spot') || name.includes('射灯')) return 'spot'
-  if (icon.includes('led-strip') || name.includes('灯带')) return 'strip'
   return 'bulb'
 }
 
-const addEntityToPlan = (entity) => {
-  const newMapping = {
-    entity_id: entity.entity_id,
-    x: 0.5,
-    y: 0.5,
-    type: getEntityType(entity.entity_id),
-    label: entity.attributes?.friendly_name || entity.entity_id,
-    layer: activeLayer.value === 'All' ? 'Living' : activeLayer.value,
-    icon_variant: defaultIconVariant(entity)
-  }
-
-  localMappings.value = [...localMappings.value, newMapping]
-  hasChanges.value = true
-  showAddDrawer.value = false
-  searchQuery.value = ''
-}
-
 const iconBaseProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.9', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
-
-const IconLightBulb = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M9 18h6' }),
-  h('path', { d: 'M10 22h4' }),
-  h('path', { d: 'M8.5 10a3.5 3.5 0 1 1 7 0c0 1.35-.47 2.18-1.55 3.2-.63.6-1.02 1.15-1.2 1.8h-1.5c-.18-.65-.57-1.2-1.2-1.8C8.97 12.18 8.5 11.35 8.5 10Z' })
-])
-const IconLightCeiling = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 4v2' }),
-  h('path', { d: 'M7 11c0-2.2 2.24-4 5-4s5 1.8 5 4' }),
-  h('path', { d: 'M6 12h12' }),
-  h('path', { d: 'M8 12v3c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-3' })
-])
-const IconLightLamp = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M8 10h8l-1.4-4.2A2 2 0 0 0 12.7 4h-1.4a2 2 0 0 0-1.9 1.8Z' }),
-  h('path', { d: 'M12 10v6' }),
-  h('path', { d: 'M9 20h6' })
-])
-const IconLightSpot = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M6 7h8l3 4-8 1Z' }),
-  h('path', { d: 'M14 7V4' }),
-  h('path', { d: 'M9 12l-2 5' })
-])
-const IconLightStrip = () => h('svg', iconBaseProps, [
-  h('rect', { x: '4', y: '8', width: '16', height: '8', rx: '4' }),
-  h('path', { d: 'M8 12h.01M12 12h.01M16 12h.01' })
-])
-
-const IconClimateCool = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 3v18' }),
-  h('path', { d: 'm7 6 5 3 5-3' }),
-  h('path', { d: 'm7 18 5-3 5 3' }),
-  h('path', { d: 'M4 12h16' }),
-  h('path', { d: 'm6 7 3 5-3 5' }),
-  h('path', { d: 'm18 7-3 5 3 5' })
-])
-const IconClimateHeat = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 3c2.6 3 4 5.1 4 7.1A4 4 0 1 1 8 10.1C8 8.1 9.4 6 12 3Z' }),
-  h('path', { d: 'M12 13c1.3 1.3 1.8 2.2 1.8 3.1a1.8 1.8 0 1 1-3.6 0c0-.9.5-1.8 1.8-3.1Z' })
-])
-const IconClimateDry = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 4c3 3.6 5 6 5 8.2A5 5 0 1 1 7 12.2C7 10 9 7.6 12 4Z' })
-])
-const IconClimateFan = () => h('svg', iconBaseProps, [
-  h('circle', { cx: '12', cy: '12', r: '2' }),
-  h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' }),
-  h('path', { d: 'M20 12c0 2-1 3-3 3-1.5 0-3-1-5-3 2-2 3.5-3 5-3 2 0 3 1 3 3Z' }),
-  h('path', { d: 'M12 20c-2 0-3-1-3-3 0-1.5 1-3 3-5 2 2 3 3.5 3 5 0 2-1 3-3 3Z' })
-])
-const IconClimateAuto = () => h('svg', iconBaseProps, [
-  h('circle', { cx: '12', cy: '12', r: '6' }),
-  h('path', { d: 'M12 6v12' }),
-  h('path', { d: 'M6 12h12' })
-])
-const IconClimateOff = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 3v7' }),
-  h('path', { d: 'M8.2 5.8a7 7 0 1 0 7.6 0' })
-])
-
-const IconSwitch = () => h('svg', iconBaseProps, [
-  h('rect', { x: '5', y: '5', width: '14', height: '14', rx: '3' }),
-  h('path', { d: 'M12 8v8' })
-])
-const IconSensor = () => h('svg', iconBaseProps, [
-  h('circle', { cx: '12', cy: '12', r: '3' }),
-  h('path', { d: 'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4' })
-])
-const IconCover = () => h('svg', iconBaseProps, [
-  h('rect', { x: '4', y: '5', width: '16', height: '14', rx: '2' }),
-  h('path', { d: 'M8 5v14M12 5v14M16 5v14' })
-])
-const IconFan = () => h('svg', iconBaseProps, [
-  h('circle', { cx: '12', cy: '12', r: '2' }),
-  h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' }),
-  h('path', { d: 'M20 12c0 2-1 3-3 3-1.5 0-3-1-5-3 2-2 3.5-3 5-3 2 0 3 1 3 3Z' }),
-  h('path', { d: 'M12 20c-2 0-3-1-3-3 0-1.5 1-3 3-5 2 2 3 3.5 3 5 0 2-1 3-3 3Z' })
-])
-const IconMedia = () => h('svg', iconBaseProps, [
-  h('rect', { x: '3', y: '6', width: '18', height: '12', rx: '2' }),
-  h('path', { d: 'm10 9 5 3-5 3z' })
-])
-const IconOutlet = () => h('svg', iconBaseProps, [
-  h('rect', { x: '7', y: '4', width: '10', height: '16', rx: '4' }),
-  h('path', { d: 'M10 10v2M14 10v2M12 14v2' })
-])
-const IconOther = () => h('svg', iconBaseProps, [
-  h('path', { d: 'M12 3 4 7.5v9L12 21l8-4.5v-9Z' }),
-  h('path', { d: 'M4 7.5 12 12l8-4.5' }),
-  h('path', { d: 'M12 12v9' })
-])
+const IconLightBulb = () => h('svg', iconBaseProps, [h('path', { d: 'M9 18h6' }), h('path', { d: 'M10 22h4' }), h('path', { d: 'M8.5 10a3.5 3.5 0 1 1 7 0c0 1.35-.47 2.18-1.55 3.2-.63.6-1.02 1.15-1.2 1.8h-1.5c-.18-.65-.57-1.2-1.2-1.8C8.97 12.18 8.5 11.35 8.5 10Z' })])
+const IconClimateCool = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3v18' }), h('path', { d: 'm7 6 5 3 5-3' }), h('path', { d: 'm7 18 5-3 5 3' }), h('path', { d: 'M4 12h16' })])
+const IconClimateHeat = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3c2.6 3 4 5.1 4 7.1A4 4 0 1 1 8 10.1C8 8.1 9.4 6 12 3Z' })])
+const IconClimateDry = () => h('svg', iconBaseProps, [h('path', { d: 'M12 4c3 3.6 5 6 5 8.2A5 5 0 1 1 7 12.2C7 10 9 7.6 12 4Z' })])
+const IconClimateFan = () => h('svg', iconBaseProps, [h('circle', { cx: '12', cy: '12', r: '2' }), h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' })])
+const IconClimateAuto = () => h('svg', iconBaseProps, [h('circle', { cx: '12', cy: '12', r: '6' }), h('path', { d: 'M12 6v12' }), h('path', { d: 'M6 12h12' })])
+const IconClimateOff = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3v7' }), h('path', { d: 'M8.2 5.8a7 7 0 1 0 7.6 0' })])
+const IconSwitch = () => h('svg', iconBaseProps, [h('rect', { x: '5', y: '5', width: '14', height: '14', rx: '3' }), h('path', { d: 'M12 8v8' })])
+const IconSensor = () => h('svg', iconBaseProps, [h('circle', { cx: '12', cy: '12', r: '3' }), h('path', { d: 'M12 2v2M12 20v2M2 12h2M20 12h2' })])
+const IconCover = () => h('svg', iconBaseProps, [h('rect', { x: '4', y: '5', width: '16', height: '14', rx: '2' }), h('path', { d: 'M8 5v14M12 5v14M16 5v14' })])
+const IconFan = () => h('svg', iconBaseProps, [h('circle', { cx: '12', cy: '12', r: '2' }), h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' })])
+const IconMedia = () => h('svg', iconBaseProps, [h('rect', { x: '3', y: '6', width: '18', height: '12', rx: '2' }), h('path', { d: 'm10 9 5 3-5 3z' })])
+const IconOther = () => h('svg', iconBaseProps, [h('path', { d: 'M12 3 4 7.5v9L12 21l8-4.5v-9Z' })])
 
 const getClimateIcon = (entity) => {
   const state = String(entity?.state || '').toLowerCase()
@@ -454,36 +279,16 @@ const getClimateIcon = (entity) => {
   return IconClimateCool
 }
 
-const getLightIcon = (variant) => {
-  return {
-    ceiling: IconLightCeiling,
-    lamp: IconLightLamp,
-    spot: IconLightSpot,
-    strip: IconLightStrip,
-    bulb: IconLightBulb
-  }[variant || 'bulb'] || IconLightBulb
-}
-
 const resolveEntityIcon = (entity, mapping = {}) => {
   const entityId = entity?.entity_id || mapping?.entity_id || ''
-  if (entityId.startsWith('light.')) return getLightIcon(mapping?.icon_variant)
+  if (entityId.startsWith('light.')) return IconLightBulb
   if (entityId.startsWith('climate.')) return getClimateIcon(entity)
   if (entityId.startsWith('cover.')) return IconCover
   if (entityId.startsWith('fan.')) return IconFan
   if (entityId.startsWith('media_player.')) return IconMedia
   if (entityId.startsWith('switch.')) return IconSwitch
-  if (entityId.startsWith('binary_sensor.') || entityId.startsWith('sensor.')) return IconSensor
-  if (entityId.startsWith('button.') || entityId.startsWith('input_boolean.')) return IconOutlet
-
-  return {
-    light: getLightIcon(mapping?.icon_variant),
-    climate: getClimateIcon(entity),
-    switch: IconSwitch,
-    sensor: IconSensor,
-    cover: IconCover,
-    fan: IconFan,
-    media: IconMedia
-  }[mapping?.type] || IconOther
+  if (entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')) return IconSensor
+  return IconOther
 }
 
 const getEntityType = (entityId) => {
@@ -505,29 +310,18 @@ const getDisplayMode = (entity, mapping) => {
 
 const getEntityBadgeValue = (entity) => {
   if (!entity) return null
-
   if (entity.entity_id.startsWith('climate.')) {
     const value = entity.attributes?.temperature ?? entity.attributes?.current_temperature
     return value !== undefined && value !== null ? `${Math.round(Number(value))}°` : null
   }
-
   if (entity.entity_id.startsWith('cover.')) {
     const position = Number(entity.attributes?.current_position)
-    if (Number.isFinite(position)) return `${position}%`
-    if (entity.state === 'open') return 'OPEN'
-    if (entity.state === 'closed') return 'CLOSE'
-    return null
+    return Number.isFinite(position) ? `${position}%` : null
   }
-
   if (entity.entity_id.startsWith('light.') && entity.state === 'on') {
     const brightness = entity.attributes?.brightness
     if (brightness) return `${Math.round((brightness / 255) * 100)}%`
   }
-
-  if (entity.entity_id.startsWith('fan.') && entity.state === 'on') {
-    return 'ON'
-  }
-
   return null
 }
 
@@ -544,15 +338,82 @@ const activeColorClass = (type, entity) => {
   if (type === 'climate') {
     const state = String(entity?.state || '').toLowerCase()
     if (state === 'heat') return 'text-orange-300 glow-warm'
-    if (state === 'dry') return 'text-cyan-300 glow-blue'
-    if (state === 'fan_only') return 'text-sky-300 glow-blue'
     return 'text-cyan-300 glow-blue'
   }
   if (type === 'cover') return 'text-blue-300 glow-blue'
   if (type === 'fan') return 'text-sky-300 glow-blue'
   if (type === 'media') return 'text-fuchsia-300 glow-violet'
-  if (type === 'switch') return 'text-emerald-300 glow-green'
   return 'text-cyan-300 glow-blue'
+}
+
+const displayMappings = computed(() => {
+  const baseMappings = activeLayer.value === 'All'
+    ? localMappings.value
+    : localMappings.value.filter((mapping) => mapping.layer === activeLayer.value)
+
+  return baseMappings.map((mapping) => {
+    const entity = entitiesById.value.get(mapping.entity_id)
+    const active = isEntityActive(entity)
+    const displayMode = getDisplayMode(entity, mapping)
+    const metricMeta = displayMode === 'metric' ? getMetricMeta(entity) : null
+    const metricValue = displayMode === 'metric' ? parseMetricValue(entity) : null
+
+    return {
+      ...mapping,
+      entity,
+      displayMode,
+      isClickable: displayMode !== 'metric',
+      metricValue: metricValue ?? '--',
+      metricUnit: metricMeta?.unit || '',
+      metricLabel: metricMeta?.label || '',
+      metricCardClass: metricMeta?.className || '',
+      badgeValue: displayMode === 'metric' ? null : getEntityBadgeValue(entity),
+      iconComponent: resolveEntityIcon(entity, mapping),
+      showGlow: !props.kioskMode && active && mapping.type === 'light',
+      showIndicator: !props.kioskMode && active && mapping.type === 'light',
+      panelClass: active ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5',
+      iconClass: active ? activeColorClass(mapping.type, entity) : 'text-white/40',
+      style: {
+        left: `${(mapping.x || 0.5) * 100}%`,
+        top: `${(mapping.y || 0.5) * 100}%`,
+        transform: 'translate(-50%, -50%)',
+        zIndex: active ? 5 : 4
+      }
+    }
+  })
+})
+
+const showLabels = computed(() => editMode.value || activeLayer.value !== 'All')
+
+const bgStyle = computed(() => localBgImage.value ? {
+  backgroundImage: `url(${localBgImage.value})`,
+  backgroundSize: 'contain',
+  backgroundPosition: 'center',
+  backgroundRepeat: 'no-repeat'
+} : {
+  background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)'
+})
+
+const previewStyle = computed(() => ({
+  left: `${previewPos.value.x}px`,
+  top: `${previewPos.value.y}px`,
+  transform: 'translate(-50%, -50%)',
+  color: '#60a5fa'
+}))
+
+const addEntityToPlan = (entity) => {
+  localMappings.value = [...localMappings.value, {
+    entity_id: entity.entity_id,
+    x: 0.5,
+    y: 0.5,
+    type: getEntityType(entity.entity_id),
+    label: entity.attributes?.friendly_name || entity.entity_id,
+    layer: activeLayer.value === 'All' ? 'Living' : activeLayer.value,
+    icon_variant: defaultIconVariant(entity)
+  }]
+  hasChanges.value = true
+  showAddDrawer.value = false
+  searchQuery.value = ''
 }
 
 const shortId = (id) => {
@@ -561,33 +422,16 @@ const shortId = (id) => {
 }
 
 const onIconClick = (mapping) => {
-  if (editMode.value) return
-
-  const entity = mapping.entity || entitiesById.value.get(mapping.entity_id)
+  if (editMode.value || !mapping.isClickable) return
   const entityId = mapping.entity_id
-
-  if (entityId.startsWith('cover.')) {
-    emit('open', { type: 'cover', entityId })
-    return
-  }
-
-  if (entityId.startsWith('climate.')) {
-    emit('open', { type: 'climate', entityId })
-    return
-  }
-
-  if (entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')) {
-    emit('open', { type: 'sensor', entityId })
-    return
-  }
-
-  emit('entity-toggle', entity || mapping)
+  if (entityId.startsWith('cover.')) return emit('open', { type: 'cover', entityId })
+  if (entityId.startsWith('climate.')) return emit('open', { type: 'climate', entityId })
+  if (entityId.startsWith('sensor.') || entityId.startsWith('binary_sensor.')) return
+  emit('entity-toggle', mapping.entity || mapping)
 }
 
 const getClientPos = (event) => {
-  if (event.touches && event.touches.length > 0) {
-    return { x: event.touches[0].clientX, y: event.touches[0].clientY }
-  }
+  if (event.touches && event.touches.length > 0) return { x: event.touches[0].clientX, y: event.touches[0].clientY }
   return { x: event.clientX, y: event.clientY }
 }
 
@@ -628,9 +472,7 @@ const onTouchMove = (event) => {
 const updateDraggedMapping = (x, y) => {
   const targetId = dragMapping.value?.entity_id
   if (!targetId) return
-  localMappings.value = localMappings.value.map((mapping) =>
-    mapping.entity_id === targetId ? { ...mapping, x, y } : mapping
-  )
+  localMappings.value = localMappings.value.map((mapping) => mapping.entity_id === targetId ? { ...mapping, x, y } : mapping)
 }
 
 const onMouseUp = () => {
@@ -640,9 +482,7 @@ const onMouseUp = () => {
   dragMapping.value = null
 }
 
-const onTouchEnd = () => {
-  onMouseUp()
-}
+const onTouchEnd = () => onMouseUp()
 
 const savePositions = () => {
   emit('mapping-update', localMappings.value)
@@ -653,7 +493,6 @@ const savePositions = () => {
 const onImageUpload = (event) => {
   const file = event.target.files?.[0]
   if (!file) return
-
   const reader = new FileReader()
   reader.onload = (loadEvent) => {
     localBgImage.value = loadEvent.target?.result || ''
@@ -662,39 +501,20 @@ const onImageUpload = (event) => {
   reader.readAsDataURL(file)
 }
 
-watch(
-  () => props.entityMapping,
-  (value) => {
-    if (!hasChanges.value) {
-      localMappings.value = (value || []).map((mapping) => ({
-        ...mapping,
-        icon_variant: mapping.icon_variant || ''
-      }))
-    }
-  },
-  { immediate: true, deep: true }
-)
+watch(() => props.entityMapping, (value) => {
+  if (!hasChanges.value) localMappings.value = [...(value || [])]
+}, { immediate: true, deep: true })
 
-watch(
-  () => props.bgImage,
-  (value) => {
-    if (!hasChanges.value) {
-      localBgImage.value = value || ''
-    }
-  },
-  { immediate: true }
-)
+watch(() => props.bgImage, (value) => {
+  if (!hasChanges.value) localBgImage.value = value || ''
+}, { immediate: true })
 
-watch(
-  () => props.kioskMode,
-  (enabled) => {
-    if (enabled) {
-      editMode.value = false
-      showAddDrawer.value = false
-    }
-  },
-  { immediate: true }
-)
+watch(() => props.kioskMode, (enabled) => {
+  if (enabled) {
+    editMode.value = false
+    showAddDrawer.value = false
+  }
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -705,31 +525,49 @@ watch(
 }
 
 .metric-card {
-  width: 4.6rem;
-  min-height: 4.25rem;
-  border-radius: 1.15rem;
+  width: 5.5rem;
+  min-height: 4.9rem;
+  border-radius: 1.2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.15rem;
-  padding: 0.55rem 0.45rem;
-  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+  gap: 0.28rem;
+  padding: 0.55rem 0.45rem 0.5rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+}
+
+.metric-reading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.08rem;
+  line-height: 1;
 }
 
 .metric-value {
-  font-size: 1.45rem;
+  font-size: 2rem;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   color: #f8fafc;
 }
 
 .metric-unit {
-  font-size: 0.68rem;
+  font-size: 0.9rem;
   line-height: 1;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.46);
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.66);
+  margin-top: 0.2rem;
+}
+
+.metric-label {
+  font-size: 0.52rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.34);
 }
 
 .metric-temperature {
@@ -742,66 +580,16 @@ watch(
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(59, 130, 246, 0.12);
 }
 
-.glow-yellow {
-  filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8));
-  animation: glow-pulse-yellow 2s ease-in-out infinite;
-}
+.glow-yellow { filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.8)); animation: glow-pulse-yellow 2s ease-in-out infinite; }
+.glow-blue { filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.8)); animation: glow-pulse-blue 2s ease-in-out infinite; }
+.glow-warm { filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.85)); animation: glow-pulse-warm 2s ease-in-out infinite; }
+.glow-violet { filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.8)); animation: glow-pulse-violet 2s ease-in-out infinite; }
+@keyframes glow-pulse-yellow { 0%,100% { filter: drop-shadow(0 0 5px rgba(251,191,36,.5)); } 50% { filter: drop-shadow(0 0 15px rgba(251,191,36,.9)); } }
+@keyframes glow-pulse-blue { 0%,100% { filter: drop-shadow(0 0 5px rgba(34,211,238,.5)); } 50% { filter: drop-shadow(0 0 15px rgba(34,211,238,.9)); } }
+@keyframes glow-pulse-warm { 0%,100% { filter: drop-shadow(0 0 5px rgba(251,146,60,.45)); } 50% { filter: drop-shadow(0 0 15px rgba(251,146,60,.9)); } }
+@keyframes glow-pulse-violet { 0%,100% { filter: drop-shadow(0 0 5px rgba(217,70,239,.45)); } 50% { filter: drop-shadow(0 0 15px rgba(217,70,239,.85)); } }
 
-.glow-blue {
-  filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.8));
-  animation: glow-pulse-blue 2s ease-in-out infinite;
-}
-
-.glow-green {
-  filter: drop-shadow(0 0 8px rgba(52, 211, 153, 0.8));
-  animation: glow-pulse-green 2s ease-in-out infinite;
-}
-
-.glow-warm {
-  filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.85));
-  animation: glow-pulse-warm 2s ease-in-out infinite;
-}
-
-.glow-violet {
-  filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.8));
-  animation: glow-pulse-violet 2s ease-in-out infinite;
-}
-
-@keyframes glow-pulse-yellow {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.5)); }
-  50% { filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.9)); }
-}
-
-@keyframes glow-pulse-blue {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(34, 211, 238, 0.5)); }
-  50% { filter: drop-shadow(0 0 15px rgba(34, 211, 238, 0.9)); }
-}
-
-@keyframes glow-pulse-green {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(52, 211, 153, 0.45)); }
-  50% { filter: drop-shadow(0 0 15px rgba(52, 211, 153, 0.85)); }
-}
-
-@keyframes glow-pulse-warm {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 146, 60, 0.45)); }
-  50% { filter: drop-shadow(0 0 15px rgba(251, 146, 60, 0.9)); }
-}
-
-@keyframes glow-pulse-violet {
-  0%, 100% { filter: drop-shadow(0 0 5px rgba(217, 70, 239, 0.45)); }
-  50% { filter: drop-shadow(0 0 15px rgba(217, 70, 239, 0.85)); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.3s ease-out;
-}
-
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.touch-none {
-  touch-action: none;
-}
+.animate-fade-in { animation: fade-in 0.3s ease-out; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.touch-none { touch-action: none; }
 </style>
