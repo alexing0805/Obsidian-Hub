@@ -198,9 +198,29 @@ def choose_entity_by_id(
     return None
 
 
+def filter_entities_by_selected(
+    entities: Iterable[dict[str, Any]], selected_ids: Optional[list[str]]
+) -> list[dict[str, Any]]:
+    entity_list = list(entities)
+    if not selected_ids:
+        return entity_list
+    selected = set(selected_ids)
+    return [entity for entity in entity_list if entity.get("entity_id") in selected]
+
+
 def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, Any] = None) -> dict[str, Any]:
     lights = [entity for entity in entities if entity["entity_id"].startswith("light.")]
     climates = [entity for entity in entities if entity["entity_id"].startswith("climate.")]
+    covers = [entity for entity in entities if entity["entity_id"].startswith("cover.")]
+    selected_lights = filter_entities_by_selected(
+        lights, current_settings.get("selected_light_entities")
+    )
+    selected_climates = filter_entities_by_selected(
+        climates, current_settings.get("selected_climate_entities")
+    )
+    selected_covers = filter_entities_by_selected(
+        covers, current_settings.get("selected_cover_entities")
+    )
     weather_entities = [
         entity for entity in entities if entity["entity_id"].startswith("weather.")
     ]
@@ -213,17 +233,27 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, An
     if not weather_entity and weather_entities:
         weather_entity = weather_entities[0]
 
+    battery_entities = [
+        entity
+        for entity in entities
+        if entity.get("attributes", {}).get("device_class") == "battery"
+    ]
+    selected_batteries = filter_entities_by_selected(
+        battery_entities, current_settings.get("selected_battery_entities")
+    )
+    selected_offline_entities = filter_entities_by_selected(
+        entities, current_settings.get("selected_offline_entities")
+    )
+
     low_battery_count = 0
-    offline_count = 0
-    for entity in entities:
-        state = entity.get("state")
-        if state_is_offline(state):
-            offline_count += 1
-        attrs = entity.get("attributes", {})
-        if attrs.get("device_class") == "battery":
-            battery_level = parse_number(state)
-            if battery_level is not None and battery_level <= 20:
-                low_battery_count += 1
+    for entity in selected_batteries:
+        battery_level = parse_number(entity.get("state"))
+        if battery_level is not None and battery_level <= 20:
+            low_battery_count += 1
+
+    offline_count = sum(
+        1 for entity in selected_offline_entities if state_is_offline(entity.get("state"))
+    )
 
     temperature_entity = choose_entity_by_id(
         entities, current_settings.get("temperature_entity")
@@ -238,11 +268,17 @@ def build_ha_summary(entities: list[dict[str, Any]], forecast_data: dict[str, An
 
 
     summary = {
-        "lights_total": len(lights),
-        "lights_on": sum(1 for light in lights if light.get("state") == "on"),
-        "climate_total": len(climates),
+        "lights_total": len(selected_lights),
+        "lights_on": sum(1 for light in selected_lights if light.get("state") == "on"),
+        "climate_total": len(selected_climates),
         "climate_active": sum(
-            1 for climate in climates if str(climate.get("state")).lower() != "off"
+            1
+            for climate in selected_climates
+            if str(climate.get("state")).lower() != "off"
+        ),
+        "cover_total": len(selected_covers),
+        "cover_open": sum(
+            1 for cover in selected_covers if str(cover.get("state")).lower() == "open"
         ),
         "low_battery_count": low_battery_count,
         "offline_count": offline_count,
@@ -882,6 +918,7 @@ async def update_settings(new_settings: dict[str, Any]):
         "weather_entity_id",
         "selected_light_entities",
         "selected_climate_entities",
+        "selected_cover_entities",
         "selected_battery_entities",
         "selected_offline_entities",
         "floor_plan_image",
@@ -994,6 +1031,7 @@ DEFAULT_SETTINGS = {
     "weather_entity_id": "",
     "selected_light_entities": [],
     "selected_climate_entities": [],
+    "selected_cover_entities": [],
     "selected_battery_entities": [],
     "selected_offline_entities": [],
     "floor_plan_image": "",

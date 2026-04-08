@@ -74,13 +74,18 @@
           <SidebarWidgets
             v-else
             :ha-entities="haEntities"
-            :summary="summary"
+            :summary="dashboardSummary"
             :ma-state="maState"
             :kiosk-mode="resolvedKioskMode"
             :current-time="currentTime"
             :current-date="currentDate"
             :weather-entity-id="currentSettings.weather_entity_id || ''"
             :sidebar-widgets="currentSettings.sidebar_widgets || defaultSidebarWidgets"
+            :selected-light-entities="currentSettings.selected_light_entities || []"
+            :selected-climate-entities="currentSettings.selected_climate_entities || []"
+            :selected-cover-entities="currentSettings.selected_cover_entities || []"
+            :selected-battery-entities="currentSettings.selected_battery_entities || []"
+            :selected-offline-entities="currentSettings.selected_offline_entities || []"
             class="flex-1 min-h-0"
             @open="activeDetail = $event"
             @select-player="onSwitchPlayer"
@@ -96,8 +101,13 @@
       :ha-entities="haEntities"
       :ma-state="maState"
       :kiosk-mode="resolvedKioskMode"
-      :summary="summary"
+      :summary="dashboardSummary"
       :weather-entity-id="currentSettings.weather_entity_id || ''"
+      :selected-light-entities="currentSettings.selected_light_entities || []"
+      :selected-climate-entities="currentSettings.selected_climate_entities || []"
+      :selected-cover-entities="currentSettings.selected_cover_entities || []"
+      :selected-battery-entities="currentSettings.selected_battery_entities || []"
+      :selected-offline-entities="currentSettings.selected_offline_entities || []"
       @close="activeDetail = { type: null, entityId: null }"
       @toggle-light="onEntityToggle"
       @climate-action="onClimateAction"
@@ -146,6 +156,7 @@ const defaultSettings = () => ({
   weather_entity_id: '',
   selected_light_entities: [],
   selected_climate_entities: [],
+  selected_cover_entities: [],
   selected_battery_entities: [],
   selected_offline_entities: [],
   floor_plan_image: '',
@@ -166,6 +177,8 @@ const summary = ref({
   lights_on: 0,
   climate_total: 0,
   climate_active: 0,
+  cover_total: 0,
+  cover_open: 0,
   low_battery_count: 0,
   offline_count: 0,
   temperature: null,
@@ -195,6 +208,52 @@ const autoDetectedKioskMode = computed(() => {
   return userAgent.includes('fully') || userAgent.includes('android')
 })
 const resolvedKioskMode = computed(() => currentSettings.value.kiosk_mode ?? autoDetectedKioskMode.value)
+
+const filterBySelected = (entities, selectedIds) => {
+  if (!Array.isArray(selectedIds) || selectedIds.length === 0) return entities
+  const selected = new Set(selectedIds)
+  return entities.filter((entity) => selected.has(entity.entity_id))
+}
+
+const dashboardSummary = computed(() => {
+  const lights = filterBySelected(
+    haEntities.value.filter((entity) => entity.entity_id.startsWith('light.')),
+    currentSettings.value.selected_light_entities
+  )
+  const climates = filterBySelected(
+    haEntities.value.filter((entity) => entity.entity_id.startsWith('climate.')),
+    currentSettings.value.selected_climate_entities
+  )
+  const covers = filterBySelected(
+    haEntities.value.filter((entity) => entity.entity_id.startsWith('cover.')),
+    currentSettings.value.selected_cover_entities
+  )
+  const batteryScope = filterBySelected(
+    haEntities.value.filter((entity) => entity.attributes?.device_class === 'battery'),
+    currentSettings.value.selected_battery_entities
+  )
+  const offlineScope = filterBySelected(
+    haEntities.value,
+    currentSettings.value.selected_offline_entities
+  )
+
+  return {
+    ...summary.value,
+    lights_total: lights.length,
+    lights_on: lights.filter((entity) => entity.state === 'on').length,
+    climate_total: climates.length,
+    climate_active: climates.filter((entity) => String(entity.state).toLowerCase() !== 'off').length,
+    cover_total: covers.length,
+    cover_open: covers.filter((entity) => String(entity.state).toLowerCase() === 'open').length,
+    low_battery_count: batteryScope.filter((entity) => {
+      const value = parseFloat(entity.state)
+      return !Number.isNaN(value) && value <= 20
+    }).length,
+    offline_count: offlineScope.filter((entity) =>
+      ['unknown', 'unavailable', 'none', ''].includes(String(entity.state).toLowerCase())
+    ).length
+  }
+})
 
 const statusText = computed(() => {
   if (haConnected.value && maConnected.value) return 'HA + MA ONLINE'

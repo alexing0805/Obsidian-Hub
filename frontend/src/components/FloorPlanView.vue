@@ -13,7 +13,7 @@
       <div
         v-for="mapping in displayMappings"
         :key="mapping.entity_id"
-        class="entity-item absolute flex flex-col items-center cursor-pointer select-none group"
+        class="entity-item absolute flex flex-col items-center cursor-pointer select-none group overflow-visible"
         :style="mapping.style"
         @click.stop="onIconClick(mapping)"
         @mousedown.stop="startDrag(mapping, $event)"
@@ -25,7 +25,7 @@
         ></div>
 
         <div
-          class="relative w-16 h-16 flex items-center justify-center rounded-2xl glass-panel transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
+          class="relative w-16 h-16 flex items-center justify-center rounded-2xl glass-panel overflow-visible transition-all duration-300 group-hover:scale-110 group-hover:bg-white/10"
           :class="mapping.panelClass"
         >
           <component
@@ -36,7 +36,7 @@
 
           <div
             v-if="mapping.value"
-            class="absolute -top-3 -right-3 px-2 py-1 bg-cyan-500 text-[10px] font-black text-white rounded-full shadow-lg border border-white/20 select-none z-10"
+            class="absolute top-1 right-1 px-1.5 py-0.5 bg-cyan-500 text-[10px] font-black text-white rounded-full shadow-lg border border-white/20 select-none z-10 leading-none"
           >
             {{ mapping.value }}
           </div>
@@ -71,8 +71,8 @@
         <button
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all shadow-lg"
           :class="editMode ? 'text-cyan-300 border border-cyan-500/50 bg-cyan-500/10' : 'border-white/10'"
-          @click="editMode = !editMode"
           :title="editMode ? '完成编辑' : '编辑视图'"
+          @click="editMode = !editMode"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -82,8 +82,8 @@
         <button
           v-if="editMode"
           class="w-14 h-14 rounded-2xl glass-panel flex items-center justify-center text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/10 transition-all shadow-lg"
+          title="添加实体"
           @click="showAddDrawer = true"
-          title="添加设备"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -104,8 +104,8 @@
         <button
           v-if="editMode && hasChanges"
           class="w-14 h-14 rounded-2xl flex items-center justify-center text-emerald-400 border border-emerald-500/50 bg-emerald-500/10 shadow-lg animate-pulse"
-          @click="savePositions"
           title="保存更改"
+          @click="savePositions"
         >
           <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -126,7 +126,7 @@
       </div>
 
       <div v-if="editMode" class="absolute bottom-6 left-1/2 -translate-x-1/2 glass-effect rounded-xl px-5 py-2.5 text-sm text-white/50 shadow-lg">
-        点击图标切换开关 | 拖拽移动位置 | 上传户型图
+        点击图标可控制设备，编辑模式下可拖动位置并保存。
       </div>
     </template>
 
@@ -135,7 +135,7 @@
         <div class="absolute inset-0 bg-black/60 backdrop-blur-xl" @click="showAddDrawer = false"></div>
         <div class="relative glass-panel rounded-[2.5rem] w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-white/10 animate-fade-in">
           <div class="p-6 border-b border-white/5 flex items-center justify-between">
-            <h3 class="text-xl font-heading font-extrabold text-white">添加设备到视图</h3>
+            <h3 class="text-xl font-heading font-extrabold text-white">添加实体到户型图</h3>
             <button class="w-10 h-10 rounded-xl flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all bg-white/5 border border-white/10" @click="showAddDrawer = false">×</button>
           </div>
 
@@ -144,7 +144,7 @@
               v-model="searchQuery"
               type="text"
               placeholder="搜索设备，例如 light.kitchen"
-              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-base focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+              class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
             />
           </div>
 
@@ -155,16 +155,19 @@
               class="flex items-center justify-between p-5 rounded-2xl border border-white/5 bg-white/5 hover:bg-white/10 cursor-pointer transition-all group"
               @click="addEntityToPlan(entity)"
             >
-              <div class="flex flex-col min-w-0 flex-1">
-                <span class="text-base font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
-                <span class="text-xs uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <component :is="getIconComponent(getEntityType(entity.entity_id), entity.entity_id)" class="w-5 h-5 text-white/55 shrink-0" />
+                <div class="flex flex-col min-w-0 flex-1">
+                  <span class="text-base font-bold text-white truncate">{{ entity.attributes?.friendly_name || entity.entity_id }}</span>
+                  <span class="text-xs uppercase tracking-tighter text-white/30 truncate">{{ entity.entity_id }}</span>
+                </div>
               </div>
               <button class="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity border border-cyan-500/30">
                 添加
               </button>
             </div>
             <div v-if="availableEntities.length === 0" class="text-center py-20 text-white/20 text-lg">
-              未找到设备
+              没有找到可添加的实体
             </div>
           </div>
         </div>
@@ -185,7 +188,7 @@ const props = defineProps({
 
 const emit = defineEmits(['mapping-update', 'bg-update', 'entity-toggle', 'open'])
 
-const layers = ['全部', '客厅', '卧室', '厨房', '卫生间', '阳台']
+const layers = ['All', 'Living', 'Bedroom', 'Kitchen', 'Bath', 'Balcony']
 
 const planContainer = ref(null)
 const editMode = ref(false)
@@ -197,7 +200,7 @@ const localBgImage = ref('')
 const hasChanges = ref(false)
 const showAddDrawer = ref(false)
 const searchQuery = ref('')
-const activeLayer = ref('全部')
+const activeLayer = ref('All')
 
 const entitiesById = computed(() => {
   const map = new Map()
@@ -215,11 +218,11 @@ const availableEntities = computed(() => {
     const name = String(entity.attributes?.friendly_name || '').toLowerCase()
     const id = entity.entity_id.toLowerCase()
     return name.includes(query) || id.includes(query)
-  }).slice(0, 50)
+  }).slice(0, 60)
 })
 
 const displayMappings = computed(() => {
-  const baseMappings = activeLayer.value === '全部'
+  const baseMappings = activeLayer.value === 'All'
     ? localMappings.value
     : localMappings.value.filter((mapping) => mapping.layer === activeLayer.value)
 
@@ -227,35 +230,29 @@ const displayMappings = computed(() => {
     const entity = entitiesById.value.get(mapping.entity_id)
     const state = entity?.state || 'off'
     const value = getEntityValue(entity)
-    const isOn = state === 'on'
-    const isLight = mapping.type === '灯'
     const animated = !props.kioskMode
-    const color = isOn ? (isLight ? '#fbbf24' : '#60a5fa') : '#555'
+    const active = isEntityActive(entity)
 
     return {
       ...mapping,
       entity,
       state,
       value,
-      showGlow: animated && isOn && isLight,
-      showIndicator: animated && isOn && isLight,
-      panelClass: isOn ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5',
-      iconClass: isOn
-        ? (isLight ? 'text-yellow-300 glow-yellow' : 'text-cyan-300 glow-blue')
-        : 'text-white/40',
+      showGlow: animated && active && mapping.type === 'light',
+      showIndicator: animated && active && mapping.type === 'light',
+      panelClass: active ? 'ring-2 ring-white/20' : 'ring-1 ring-white/5',
+      iconClass: active ? activeColorClass(mapping.type) : 'text-white/40',
       style: {
         left: `${(mapping.x || 0.5) * 100}%`,
         top: `${(mapping.y || 0.5) * 100}%`,
         transform: 'translate(-50%, -50%)',
-        color,
-        filter: animated && isOn && isLight ? 'drop-shadow(0 0 8px #fbbf2488)' : 'none',
-        zIndex: isOn ? 5 : 4
+        zIndex: active ? 5 : 4
       }
     }
   })
 })
 
-const showLabels = computed(() => editMode.value || activeLayer.value !== '全部')
+const showLabels = computed(() => editMode.value || activeLayer.value !== 'All')
 
 const bgStyle = computed(() => {
   if (localBgImage.value) {
@@ -286,7 +283,7 @@ const addEntityToPlan = (entity) => {
     y: 0.5,
     type: getEntityType(entity.entity_id),
     label: entity.attributes?.friendly_name || entity.entity_id,
-    layer: activeLayer.value === '全部' ? '客厅' : activeLayer.value
+    layer: activeLayer.value === 'All' ? 'Living' : activeLayer.value
   }
 
   localMappings.value = [...localMappings.value, newMapping]
@@ -316,6 +313,16 @@ const IconCover = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: '
   h('path', { d: 'M9 3v18' }),
   h('path', { d: 'M15 3v18' })
 ])
+const IconFan = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('circle', { cx: '12', cy: '12', r: '2' }),
+  h('path', { d: 'M12 4c2 0 3 1 3 3 0 1.5-1 3-3 5-2-2-3-3.5-3-5 0-2 1-3 3-3Z' }),
+  h('path', { d: 'M20 12c0 2-1 3-3 3-1.5 0-3-1-5-3 2-2 3.5-3 5-3 2 0 3 1 3 3Z' }),
+  h('path', { d: 'M12 20c-2 0-3-1-3-3 0-1.5 1-3 3-5 2 2 3 3.5 3 5 0 2-1 3-3 3Z' })
+])
+const IconMedia = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
+  h('rect', { x: '3', y: '5', width: '18', height: '14', rx: '2' }),
+  h('path', { d: 'm10 9 5 3-5 3z' })
+])
 const IconOther = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' }, [
   h('path', { d: 'M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z' }),
   h('path', { d: 'm3.3 7 8.7 5 8.7-5M12 22V12' })
@@ -323,29 +330,36 @@ const IconOther = () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: '
 
 const getIconComponent = (type, entityId = '') => {
   if (entityId.startsWith('cover.')) return IconCover
+  if (entityId.startsWith('fan.')) return IconFan
+  if (entityId.startsWith('media_player.')) return IconMedia
+
   return {
-    灯: IconLight,
-    空调: IconClimate,
-    开关: IconSwitch,
-    传感器: IconSensor,
-    窗帘: IconCover
+    light: IconLight,
+    climate: IconClimate,
+    switch: IconSwitch,
+    sensor: IconSensor,
+    cover: IconCover,
+    fan: IconFan,
+    media: IconMedia
   }[type] || IconOther
 }
 
 const getEntityType = (entityId) => {
-  if (entityId.startsWith('light.')) return '灯'
-  if (entityId.startsWith('climate.')) return '空调'
-  if (entityId.startsWith('switch.')) return '开关'
-  if (entityId.startsWith('sensor.')) return '传感器'
-  if (entityId.startsWith('cover.')) return '窗帘'
-  return '其他'
+  if (entityId.startsWith('light.')) return 'light'
+  if (entityId.startsWith('climate.')) return 'climate'
+  if (entityId.startsWith('switch.')) return 'switch'
+  if (entityId.startsWith('sensor.')) return 'sensor'
+  if (entityId.startsWith('cover.')) return 'cover'
+  if (entityId.startsWith('fan.')) return 'fan'
+  if (entityId.startsWith('media_player.')) return 'media'
+  return 'other'
 }
 
 const getEntityValue = (entity) => {
   if (!entity) return null
 
   if (entity.entity_id.startsWith('climate.')) {
-    return `${entity.attributes?.current_temperature || entity.state}°`
+    return `${entity.attributes?.current_temperature || entity.state}C`
   }
 
   if (entity.entity_id.startsWith('sensor.')) {
@@ -354,8 +368,10 @@ const getEntityValue = (entity) => {
   }
 
   if (entity.entity_id.startsWith('cover.')) {
-    if (entity.state === 'open') return '开'
-    if (entity.state === 'closed') return '关'
+    const position = Number(entity.attributes?.current_position)
+    if (Number.isFinite(position)) return `${position}%`
+    if (entity.state === 'open') return 'OPEN'
+    if (entity.state === 'closed') return 'CLOSE'
     return entity.state
   }
 
@@ -364,7 +380,28 @@ const getEntityValue = (entity) => {
     if (brightness) return `${Math.round((brightness / 255) * 100)}%`
   }
 
+  if (entity.entity_id.startsWith('fan.')) {
+    return entity.state === 'on' ? 'ON' : 'OFF'
+  }
+
   return null
+}
+
+const isEntityActive = (entity) => {
+  if (!entity) return false
+  const state = String(entity.state).toLowerCase()
+  if (entity.entity_id.startsWith('climate.')) return state !== 'off'
+  if (entity.entity_id.startsWith('cover.')) return state === 'open'
+  return state === 'on'
+}
+
+const activeColorClass = (type) => {
+  if (type === 'light') return 'text-yellow-300 glow-yellow'
+  if (type === 'climate') return 'text-cyan-300 glow-blue'
+  if (type === 'cover') return 'text-blue-300 glow-blue'
+  if (type === 'fan') return 'text-sky-300 glow-blue'
+  if (type === 'media') return 'text-fuchsia-300 glow-blue'
+  return 'text-cyan-300 glow-blue'
 }
 
 const shortId = (id) => {
